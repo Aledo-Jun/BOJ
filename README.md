@@ -1,3 +1,3 @@
 ## My Own Utility functions or structures for solving BOJ
 
-[BOJ Profile](https://solved.ac/profile/june0501/)
+[![Solved.ac Profile](http://mazassumnida.wtf/api/v2/generate_badge?boj=june0501)](https://solved.ac/june0501/)
