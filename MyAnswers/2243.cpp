@@ -10,8 +10,8 @@ template<typename T> using matrix [[maybe_unused]] = vector<vector<T>>;
 
 #define int ll
 template<typename T,
-         typename func = plus<T>,
-         typename updating_func = plus<T>>
+        typename func = plus<T>,
+        typename updating_func = plus<T>>
 class SegTree {
 private:
     func f;
