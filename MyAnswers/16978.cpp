@@ -1,3 +1,6 @@
+//
+// Created by june0 on 2024-01-05.
+//
 #include <bits/stdc++.h>
 #define fastIO ios_base::sync_with_stdio(false); cin.tie(0); cout.tie(0)
 using namespace std;
@@ -10,8 +13,8 @@ template<typename T> using matrix [[maybe_unused]] = vector<vector<T>>;
 
 #define int ll
 template<typename T,
-         typename func = plus<T>,
-         typename updating_func = plus<T>>
+        typename func = plus<T>,
+        typename updating_func = plus<T>>
 class SegTree {
 private:
     func f;
