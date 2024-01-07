@@ -27,7 +27,8 @@ private:
         int mid = (left + right) >> 1;
         auto left_result = init(node << 1, left, mid);
         auto right_result = init(node << 1 | 1, mid + 1, right);
-        tree[node] = f(left_result, right_result);
+        tree[node].resize(left_result.size() + right_result.size());
+        f(left_result, right_result, tree[node]);
 
         return tree[node];
     }
@@ -41,57 +42,66 @@ private:
             int mid = (start + end) >> 1;
             _update(node << 1, start, mid, idx, value);
             _update(node << 1 | 1, mid + 1, end, idx, value);
-            tree[node] = f(tree[node << 1], tree[node << 1 | 1]);
+            f(tree[node << 1], tree[node << 1 | 1], tree[node]);
         }
     }
 
-    T _query(int node, int start, int end, int left, int right) {
-        if (end < left || right < start) return default_query;
-        if (left <= start && end <= right) return tree[node];
+    int _query(int node, int start, int end, int left, int right, int k) {
+        if (end < left || right < start) return 0;
+        if (left <= start && end <= right) {
+            return distance(upper_bound(tree[node].begin(), tree[node].end(), k), tree[node].end());
+        }
 
         int mid = (start + end) >> 1;
-        auto left_result = _query(node << 1, start, mid, left, right);
-        auto right_result = _query(node << 1 | 1, mid + 1, end, left, right);
-        return f(left_result, right_result);
+        auto left_result = _query(node << 1, start, mid, left, right, k);
+        auto right_result = _query(node << 1 | 1, mid + 1, end, left, right, k);
+        return left_result + right_result;
     }
 
 public:
-    SegTree(const vector<T>& v, T default_query = 0) : default_query(std::move(default_query)){
-        arr = v;
+    explicit SegTree(const vector<T>& v, int default_query = 0) : arr(v), default_query(std::move(default_query)){
         height = (int)ceil(log2(v.size()));
         size = (1 << (height + 1));
         tree.resize(size + 1);
-        init(1, 0, v.size() - 1);
+        init(1, 0, arr.size() - 1);
     }
 
     void update(int idx, T value) {
         _update(1, 0, arr.size() - 1, idx, value);
     }
 
-    T query(int left, int right){
-        return _query(1, 0, arr.size() - 1, left, right);
+    int query(int left, int right, int k){
+        return _query(1, 0, arr.size() - 1, left, right, k);
+    }
+};
+
+template<typename T>
+struct merge_vec {
+    constexpr void operator()(const vector<T>& a, const vector<T>& b, vector<T>& res){
+        std::merge(a.begin(), a.end(), b.begin(), b.end(), res.begin());
     }
 };
 
 int32_t main() {
     fastIO;
-    int n, m;
-    cin >> n >> m;
-    vector<pair<int,int>> v(m);
-    for (int i = 0; i < m; i++){
-        cin >> v[i].first >> v[i].second;
+    int n;
+    cin >> n;
+    matrix<int> v(n);
+    for (int i = 0; i < n; i++) {
+        int x;
+        cin >> x;
+        v[i].emplace_back(x);
     }
-    sort(v.begin(), v.end());
 
-    vector<int> w(n, 0);
-    SegTree<int> segTree(w);
+    SegTree<vector<int>, merge_vec<int>> segTree(v);
 
-    int ans = 0;
-    for (const auto& p : v) {
-        ans += segTree.query(p.second, n - 1);
-        segTree.update(p.second - 1, 1);
+    int m;
+    cin >> m;
+    while (m--){
+        int i, j, k;
+        cin >> i >> j >> k;
+        cout << segTree.query(i - 1, j - 1, k) << '\n';
     }
-    cout << ans;
 
     return 0;
 }
