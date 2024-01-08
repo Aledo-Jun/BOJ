@@ -1,3 +1,6 @@
+//
+// Created by june0 on 2024-01-07.
+//
 #include <bits/stdc++.h>
 #define fastIO ios_base::sync_with_stdio(false); cin.tie(0); cout.tie(0)
 using namespace std;
@@ -21,16 +24,16 @@ private:
     vector<T> tree, arr;
     int size, height;
 
-    void init(int node, int left, int right){
-        if (left == right) {
-            tree[node] = arr[left];
-            return;
-        }
+    T init(int node, int left, int right){
+        if (left == right) return tree[node] = arr[left];
 
         int mid = (left + right) >> 1;
-        init(node << 1, left, mid);
-        init(node << 1 | 1, mid + 1, right);
-        f(tree[node << 1], tree[node << 1 | 1], tree[node]);
+        auto left_result = init(node << 1, left, mid);
+        auto right_result = init(node << 1 | 1, mid + 1, right);
+        tree[node].resize(left_result.size() + right_result.size());
+        f(left_result, right_result, tree[node]);
+
+        return tree[node];
     }
 
     void _update(int node, int start, int end, int idx, T value) {
@@ -46,20 +49,17 @@ private:
         }
     }
 
-    int lower = 0, upper = 0;
-    void _query(int node, int start, int end, int left, int right, int k) {
-        if (end < left || right < start) return;
+    int _query(int node, int start, int end, int left, int right, int k) {
+        if (end < left || right < start) return 0;
         if (left <= start && end <= right) {
-            lower += distance(tree[node].begin(),
-                              lower_bound(tree[node].begin(), tree[node].end(), k));
-            upper += distance(tree[node].begin(),
-                              upper_bound(tree[node].begin(), tree[node].end(), k));
-            return;
+            return distance(upper_bound(tree[node].begin(), tree[node].end(), k),
+                            tree[node].end());
         }
 
         int mid = (start + end) >> 1;
-        _query(node << 1, start, mid, left, right, k);
-        _query(node << 1 | 1, mid + 1, end, left, right, k);
+        auto left_result = _query(node << 1, start, mid, left, right, k);
+        auto right_result = _query(node << 1 | 1, mid + 1, end, left, right, k);
+        return left_result + right_result;
     }
 
 public:
@@ -75,34 +75,21 @@ public:
     }
 
     int query(int left, int right, int k){
-        int low = -1E9, high = 1E9, mid = 0;
-        while (true){
-            lower = upper = 0;
-            if (low + high < 0){
-                mid = (low + high - 1) / 2;
-            } else {
-                mid = (low + high) / 2;
-            }
-            _query(1, 0, arr.size() - 1, left, right, mid);
-            if (lower == k - 1 && upper == k) break;
-            lower < k ? low = mid : high = mid;
-        }
-        return mid;
+        return _query(1, 0, arr.size() - 1, left, right, k);
     }
 };
 
 template<typename T>
 struct merge_vec {
     constexpr void operator()(const vector<T>& a, const vector<T>& b, vector<T>& res){
-        res.resize(a.size() + b.size());
         std::merge(a.begin(), a.end(), b.begin(), b.end(), res.begin());
     }
 };
 
 int32_t main() {
     fastIO;
-    int n, m;
-    cin >> n >> m;
+    int n;
+    cin >> n;
     matrix<int> v(n);
     for (int i = 0; i < n; i++) {
         int x;
@@ -112,10 +99,14 @@ int32_t main() {
 
     SegTree<vector<int>, merge_vec<int>> segTree(v, vector<int>());
 
+    int m, prev = 0;
+    cin >> m;
     while (m--){
-        int i, j, k;
-        cin >> i >> j >> k;
-        cout << segTree.query(i - 1, j - 1, k) << '\n';
+        int a, b, c;
+        cin >> a >> b >> c;
+        int i = a ^ prev, j = b ^ prev, k = c ^ prev;
+        prev = segTree.query(i - 1, j - 1, k);
+        cout << prev << '\n';
     }
 
     return 0;

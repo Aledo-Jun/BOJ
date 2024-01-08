@@ -1,5 +1,5 @@
 //
-// Created by june0 on 2024-01-07.
+// Created by june0 on 2024-01-09.
 //
 #include <bits/stdc++.h>
 #define fastIO ios_base::sync_with_stdio(false); cin.tie(0); cout.tie(0)
@@ -63,7 +63,7 @@ private:
     }
 
 public:
-    explicit SegTree(const vector<T>& v, int default_query = 0) : arr(v), default_query(std::move(default_query)){
+    explicit SegTree(const vector<T>& v, T default_query = 0) : arr(v), default_query(std::move(default_query)){
         height = (int)ceil(log2(v.size()));
         size = (1 << (height + 1));
         tree.resize(size + 1);
@@ -97,14 +97,16 @@ int32_t main() {
         v[i].emplace_back(x);
     }
 
-    SegTree<vector<int>, merge_vec<int>> segTree(v);
+    SegTree<vector<int>, merge_vec<int>> segTree(v, vector<int>());
 
-    int m;
+    int m, prev = 0;
     cin >> m;
     while (m--){
-        int i, j, k;
-        cin >> i >> j >> k;
-        cout << segTree.query(i - 1, j - 1, k) << '\n';
+        int a, b, c;
+        cin >> a >> b >> c;
+        int i = a ^ prev, j = b ^ prev, k = c ^ prev;
+        prev = segTree.query(i - 1, j - 1, k);
+        cout << prev << '\n';
     }
 
     return 0;
