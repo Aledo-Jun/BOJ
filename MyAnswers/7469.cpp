@@ -1,3 +1,8 @@
+//
+// Created by june0 on 2024-01-09.
+// Using merge-sort tree and binary search
+//
+
 #include <bits/stdc++.h>
 #define fastIO ios_base::sync_with_stdio(false); cin.tie(0); cout.tie(0)
 using namespace std;
