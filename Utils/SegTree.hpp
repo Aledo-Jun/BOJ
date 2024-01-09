@@ -55,13 +55,13 @@ private:
 
 
     /**
-     * Find the result of <i>func</i> over the array elements in range [left, right]
+     * Find the result of @p func over the array elements in range [left, right]
      * @param node current node index in the tree
      * @param start starting index that the current node is covering
      * @param end ending index that the current node is covering
-     * @param left starting index of performing <i>func</i>
-     * @param right ending index of performing <i>func</i>
-     * @return the result of <i>func</i> over the array elements in range [left, right]
+     * @param left starting index of performing @p func
+     * @param right ending index of performing @p func
+     * @return the result of @p func over the array elements in range [left, right]
      */
     T _query(int node, int start, int end, int left, int right) {
         if (end < left || right < start) return default_query;
