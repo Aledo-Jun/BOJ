@@ -201,9 +201,52 @@ public:
     }
 };
 
+class FenWickTree {
+private:
+    vector<int> tree;
+    int size;
+
+    void _update(int x, int val){
+        for (int i = x; i < size; i += (i & -i)){
+            tree[i] += val;
+        }
+    }
+
+    int _query(int x){
+        int res = 0;
+        for (int i = x; i > 0; i -= (i & -i)){
+            res += tree[i];
+        }
+        return res;
+    }
+
+public:
+    FenWickTree(const vector<int>& v){
+        size = v.size();
+        tree = vector<int>(size);
+        for (int i = 1; i < size; i++){
+            _update(i, v[i]);
+        }
+    }
+
+    void update(int x, int val){
+        _update(x, val);
+    }
+
+    int query(int left, int right, int k){
+        if (left == right) return left;
+
+        int mid = (left + right) >> 1;
+        int l = _query(left - 1);
+        int m = _query(mid);
+        if (m - l >= k) return query(left, mid, k);
+        else return query(mid + 1, right, k - m + l);
+    }
+};
+
 template<typename T> using matrix = vector<vector<T>>;
 
-class FenWickTree {
+class FenWickTree_2D {
 private:
     matrix<int> tree;
     int size;
@@ -227,7 +270,7 @@ private:
     }
 
 public:
-    FenWickTree(const matrix<int>& mat){
+    FenWickTree_2D(const matrix<int>& mat){
         size = mat.size();
         tree = matrix<int>(size, vector<int>(size));
         for (int i = 1; i < size; i++){
