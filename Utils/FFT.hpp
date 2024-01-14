@@ -144,11 +144,21 @@ namespace FFT {
         auto conv = _convolution(std::move(_a), std::move(_b));
 
         std::vector<T> res(n + m - 1);
-        for (int i = 0; i < n + m - 1; i++)
-            res[i] = conv[i].real();
+        if (is_floating_point_v<T>) {
+            for (int i = 0; i < n + m - 1; i++)
+                res[i] = conv[i].real();
+        } else {
+            for (int i = 0; i < n + m - 1; i++)
+                res[i] = std::round(conv[i].real());
+        }
 
         return res;
     }
+}
+
+namespace NTT {
+    const int MOD = 998'244'353;
+
 }
 
 #endif //BOJ_FFT_HPP
