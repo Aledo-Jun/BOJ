@@ -2,6 +2,72 @@
 
 using namespace std;
 
+template<typename T>
+struct arithmetic_interface {
+    // Assignment
+    virtual T& operator=(const T&) = delete;
+    virtual T& operator=(const long long&) = delete;
+    virtual T& operator+=(const T&) = delete;
+    virtual T& operator+=(const long long&) = delete;
+    virtual T& operator-=(const T&) = delete;
+    virtual T& operator-=(const long long&) = delete;
+    virtual T& operator*=(const T&) = delete;
+    virtual T& operator*=(const long long&) = delete;
+    virtual T& operator/=(const T&) = delete;
+    virtual T& operator/=(const long long&) = delete;
+
+    // Binary operations
+    virtual T operator+(const T&) = delete;
+    virtual T operator+(const long long&) = delete;
+    virtual T operator-(const T&) = delete;
+    virtual T operator-(const long long&) = delete;
+    virtual T operator*(const T&) = delete;
+    virtual T operator*(const long long&) = delete;
+    virtual T operator/(const T&) = delete;
+    virtual T operator/(const long long&) = delete;
+
+    // Unary operations
+    virtual T operator+() = delete;
+    virtual T operator-() = delete;
+
+    // Increment/decrement operations
+    virtual T& operator++() = delete;
+    virtual T& operator--() = delete;
+    virtual T operator++(int) = delete;
+    virtual T operator--(int) = delete;
+
+    // Conditional operations
+    virtual bool operator==(const T&) = delete;
+    virtual bool operator==(const long long&) = delete;
+    virtual bool operator!=(const T&) = delete;
+    virtual bool operator!=(const long long&) = delete;
+    virtual bool operator>(const T&) = delete;
+    virtual bool operator>(const long long&) = delete;
+    virtual bool operator<(const T&) = delete;
+    virtual bool operator<(const long long&) = delete;
+    virtual bool operator>=(const T&) = delete;
+    virtual bool operator>=(const long long&) = delete;
+    virtual bool operator<=(const T&) = delete;
+    virtual bool operator<=(const long long&) = delete;
+};
+
+template<typename T>
+using is_signed_int =
+        typename std::conditional<std::is_integral_v<T> && std::is_signed_v<T>,
+                                  std::true_type,
+                                  std::false_type>::type;
+template<typename T>
+using is_signed_int_t = std::enable_if_t<is_signed_int<T>::value>;
+
+template<typename T>
+using is_unsigned_int =
+        typename std::conditional<std::is_integral_v<T> && std::is_unsigned_v<T>,
+                                  std::true_type,
+                                  std::false_type>::type;
+template<typename T>
+using is_unsigned_int_t = std::enable_if_t<is_unsigned_int<T>::value>;
+
+
 namespace math_utils {
 
     int gcd(int a, int b) {
@@ -18,9 +84,9 @@ namespace math_utils {
         int res = 1;
         while (pow > 0) {
             if (pow & 1) {
-                res = (1LL * res * base) % MOD;
+                res = (int)(1LL * res * base) % MOD;
             }
-            base = (1LL * base * base) % MOD;
+            base = (int)(1LL * base * base) % MOD;
             pow >>= 1;
         }
         return res;
@@ -29,7 +95,7 @@ namespace math_utils {
     int factorial_mod(int n) {
         int res = 1;
         for (int i = 1; i <= n; i++) {
-            res = (1LL * res * i) % MOD;
+            res = (int)(1LL * res * i) % MOD;
         }
         return res;
     }
@@ -37,11 +103,11 @@ namespace math_utils {
     int _binomial_coefficient(int n, int k) {
         // Calculate n! / (k! * (n-k)!)
         int numerator = factorial_mod(n);
-        int denominator = (1LL * factorial_mod(k) * factorial_mod(n - k)) % MOD;
+        int denominator = (int)(1LL * factorial_mod(k) * factorial_mod(n - k)) % MOD;
 
         int denominator_inverse = pow_mod(denominator, MOD - 2);
 
-        int result = (1LL * numerator * denominator_inverse) % MOD;
+        int result = (int)(1LL * numerator * denominator_inverse) % MOD;
         return result;
     }
 
@@ -67,8 +133,8 @@ namespace math_utils {
         if (n == 0) return 1;
         if (n == 1) return (r + 1) % MOD;
         if (n % 2 == 0)
-            return (1LL * geometric_sum(r, n / 2 - 1) * (1 + pow_mod(r, n / 2)) % MOD + pow_mod(r, n)) % MOD;
-        return (1LL * geometric_sum(r, n / 2) * (1 + pow_mod(r, n / 2 + 1))) % MOD;
+            return (int)(1LL * geometric_sum(r, n / 2 - 1) * (1 + pow_mod(r, n / 2)) % MOD + pow_mod(r, n)) % MOD;
+        return (int)(1LL * geometric_sum(r, n / 2) * (1 + pow_mod(r, n / 2 + 1))) % MOD;
     }
 
     // Matrix size
@@ -135,11 +201,11 @@ namespace math_utils {
         return (a - b + MOD) % MOD;
     }
     int multiply(int a, int b) {
-        return ((long long)a * b) % MOD;
+        return (int)((long long)a * b) % MOD;
     }
 
     int modularDeterminant(vector<vector<int>> &mat) {
-        int n = mat.size();
+        int n = (int) mat.size();
         int det = 1;
 
         for (int i = 0; i < n; i++) {
