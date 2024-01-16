@@ -13,7 +13,8 @@
 using namespace std;
 
 namespace FFT {
-    using base = std::complex<double>;
+    using base = std::complex<long double>;
+    const long double PI = M_PI;
 
     void _fft(std::vector<base> &_v, bool _is_inv){
         int n = (int) _v.size();
@@ -27,7 +28,7 @@ namespace FFT {
             if (i < j) std::swap(_v[i], _v[j]);
         }
         for (int i = 1; i < n; i <<= 1){
-            double x = _is_inv ? M_PI / i : -M_PI / i;
+            long double x = _is_inv ? PI / i : -PI / i;
             base w = {cos(x), sin(x)};
             for (int j = 0; j < n; j += i << 1){
                 base z = {1, 0};
@@ -56,8 +57,8 @@ namespace FFT {
 
     template<typename T,
             std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-    vector<base> fft(std::vector<T> &__v){
-        std::vector<base> _v(__v.begin(), __v.end());
+    vector<base> fft(std::vector<T> &v){
+        std::vector<base> _v(v.begin(), v.end());
         _fft(_v, false);
         return _v;
     }
@@ -68,8 +69,8 @@ namespace FFT {
 
     template<typename T,
             std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-    vector<base> inv_fft(std::vector<T> &__v){
-        std::vector<base> _v(__v.begin(), __v.end());
+    vector<base> inv_fft(std::vector<T> &v){
+        std::vector<base> _v(v.begin(), v.end());
         _fft(_v, true);
         return _v;
     }
@@ -154,7 +155,7 @@ namespace FFT {
 
         return res;
     }
-}
+} // namespace FFT
 
 
 namespace NTT {
@@ -211,15 +212,15 @@ namespace NTT {
     template<typename T,
             std::enable_if_t<!std::is_floating_point_v<T>>* = nullptr,
             std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-    void ntt(std::vector<T> &_v){
-        _ntt(_v, false);
+    void ntt(std::vector<T> &v){
+        _ntt(v, false);
     }
 
     template<typename T,
             std::enable_if_t<!std::is_floating_point_v<T>>* = nullptr,
             std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-    void inv_ntt(std::vector<T> &_v){
-        _ntt(_v, true);
+    void inv_ntt(std::vector<T> &v){
+        _ntt(v, true);
     }
 
     std::vector<int> _naive_convolution(const std::vector<int> &_a,
@@ -298,6 +299,6 @@ namespace NTT {
 
         return res;
     }
-}
+} // namespace NTT
 
 #endif //BOJ_FFT_HPP
