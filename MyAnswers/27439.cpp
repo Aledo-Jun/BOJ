@@ -46,3 +46,47 @@ int32_t main() {
 
     return 0;
 }
+
+#ifdef BOJ_FFT_HPP
+/// solution using NTT
+using namespace NTT;
+
+vector<int> multiply(const vector<int> &a, const vector<int> &b){
+    auto res = convolution(a, b);
+    for (int i = 0; i < res.size(); i++){
+        if (res[i] > 9) {
+            if (i + 1 == res.size()) res.emplace_back(0);
+            res[i + 1] += res[i] / 10;
+            res[i] %= 10;
+        }
+    }
+    return res;
+}
+
+vector<int> iToVec(int n){
+    vector<int> res;
+    while (n > 0){
+        res.emplace_back(n % 10);
+        n /= 10;
+    }
+    return res;
+}
+
+vector<int> solve(int l, int r){
+    if (l > r) return iToVec(1);
+    if (l == r) return iToVec(l);
+    int mid = (l + r) >> 1;
+    return multiply(solve(l, mid), solve(mid + 1, r));
+}
+
+int32_t main() {
+    fastIO;
+    int n;
+    cin >> n;
+    auto res = solve(1, n);
+    for (int i = res.size() - 1; i >= 0; i--)
+        cout << res[i];
+
+    return 0;
+}
+#endif
