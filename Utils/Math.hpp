@@ -1,69 +1,23 @@
+#ifndef BOJ_MATH_HPP
+#define BOJ_MATH_HPP
+
 #include <vector>
 
 using namespace std;
 
 template<typename T>
-struct arithmetic_interface {
-    // Assignment
-    virtual T& operator=(const T&) = delete;
-    virtual T& operator=(const long long&) = delete;
-    virtual T& operator+=(const T&) = delete;
-    virtual T& operator+=(const long long&) = delete;
-    virtual T& operator-=(const T&) = delete;
-    virtual T& operator-=(const long long&) = delete;
-    virtual T& operator*=(const T&) = delete;
-    virtual T& operator*=(const long long&) = delete;
-    virtual T& operator/=(const T&) = delete;
-    virtual T& operator/=(const long long&) = delete;
-
-    // Binary operations
-    virtual T operator+(const T&) = delete;
-    virtual T operator+(const long long&) = delete;
-    virtual T operator-(const T&) = delete;
-    virtual T operator-(const long long&) = delete;
-    virtual T operator*(const T&) = delete;
-    virtual T operator*(const long long&) = delete;
-    virtual T operator/(const T&) = delete;
-    virtual T operator/(const long long&) = delete;
-
-    // Unary operations
-    virtual T operator+() = delete;
-    virtual T operator-() = delete;
-
-    // Increment/decrement operations
-    virtual T& operator++() = delete;
-    virtual T& operator--() = delete;
-    virtual T operator++(int) = delete;
-    virtual T operator--(int) = delete;
-
-    // Conditional operations
-    virtual bool operator==(const T&) = delete;
-    virtual bool operator==(const long long&) = delete;
-    virtual bool operator!=(const T&) = delete;
-    virtual bool operator!=(const long long&) = delete;
-    virtual bool operator>(const T&) = delete;
-    virtual bool operator>(const long long&) = delete;
-    virtual bool operator<(const T&) = delete;
-    virtual bool operator<(const long long&) = delete;
-    virtual bool operator>=(const T&) = delete;
-    virtual bool operator>=(const long long&) = delete;
-    virtual bool operator<=(const T&) = delete;
-    virtual bool operator<=(const long long&) = delete;
-};
-
-template<typename T>
 using is_signed_int =
-        typename std::conditional<std::is_integral_v<T> && std::is_signed_v<T>,
+        typename std::conditional_t<std::is_integral_v<T> && std::is_signed_v<T>,
                                   std::true_type,
-                                  std::false_type>::type;
+                                  std::false_type>;
 template<typename T>
 using is_signed_int_t = std::enable_if_t<is_signed_int<T>::value>;
 
 template<typename T>
 using is_unsigned_int =
-        typename std::conditional<std::is_integral_v<T> && std::is_unsigned_v<T>,
+        typename std::conditional_t<std::is_integral_v<T> && std::is_unsigned_v<T>,
                                   std::true_type,
-                                  std::false_type>::type;
+                                  std::false_type>;
 template<typename T>
 using is_unsigned_int_t = std::enable_if_t<is_unsigned_int<T>::value>;
 
@@ -204,7 +158,7 @@ namespace math_utils {
         return (int)((long long)a * b) % MOD;
     }
 
-    int modularDeterminant(vector<vector<int>> &mat) {
+    int modularDeterminant(matrix<int> &mat) {
         int n = (int) mat.size();
         int det = 1;
 
@@ -243,18 +197,13 @@ namespace math_utils {
         return det;
     }
 
-    int count_factors(int n, int p){
-        int res = 0;
-
-        for (int i = p; n / i >= 1; i *= p){
-            res += n / i;
-        }
-
-        return res;
-    }
-
-    vector<int> prime_sieve(int n){
-        vector<bool> is_prime = vector<bool>(n+1, true);
+    /**
+     * Implementation of Eratosthenes' sieve
+     * @param n
+     * @return vector of primes that is less or equal than @p n
+     */
+    std::vector<int> prime_sieve(int n){
+        std::vector<bool> is_prime = std::vector<bool>(n+1, true);
         is_prime[0] = is_prime[1] = false;
         for (int i = 2; i * i <= n; i++){
             if (is_prime[i]){
@@ -263,7 +212,7 @@ namespace math_utils {
                 }
             }
         }
-        vector<int> sieve;
+        std::vector<int> sieve;
         for (int i = 2; i <= n; i++){
             if (is_prime[i])
                 sieve.push_back(i);
@@ -308,3 +257,4 @@ namespace math_utils {
 
 }// End math_utils
 
+#endif
