@@ -23,7 +23,7 @@ namespace Modulo {
      */
     template<int MOD,
             enable_if_t<(MOD >= 1)> * = nullptr>
-    class ModInt : arithmetic_interface<ModInt<MOD>>, modint_base {
+    class ModInt :  modint_base {
         using mint = ModInt;
 
     private:
@@ -57,10 +57,11 @@ namespace Modulo {
         ////////////////////////////////////////////////////////////////
 
         ModInt() : _v(0) {}
+        ModInt(const mint& other) : _v(other._v) {}
 
         template<typename T,
                 is_signed_int_t<T> * = nullptr>
-        explicit ModInt(T value) {
+        /* implicit */ ModInt(T value) { // NOLINT(google-explicit-constructor)
             long long x = value % _umod();
             if (x < 0) x += _umod();
             _v = x;
@@ -68,7 +69,7 @@ namespace Modulo {
 
         template<typename T,
                 is_unsigned_int_t<T> * = nullptr>
-        explicit ModInt(T value) {
+        /* implicit */ ModInt(T value) { // NOLINT(google-explicit-constructor)
             _v = value % _umod();
         }
 
@@ -77,29 +78,19 @@ namespace Modulo {
         ////////////////////////////////////////////////////////////////
 
         /* Assignment operators */
-        mint &operator=(const mint &other) { _v = other._v; }
-        mint &operator=(mint &&other) noexcept { this = other; } // move constructor
-        mint &operator=(const long long &other) { _v = other; }
-        mint &operator=(long long &&other) { _v = other; }
+        mint &operator=(const mint &other) {
+            _v = other._v;
+            return *this;
+        }
 
         mint &operator+=(const mint &rhs) {
             _v += rhs._v;
             if (_v >= _umod()) _v -= _umod();
             return *this;
         }
-        mint &operator+=(const long long &rhs) {
-            _v += rhs;
-            if (_v >= _umod()) _v -= _umod();
-            return *this;
-        }
 
         mint &operator-=(const mint &rhs) {
             _v += _umod() - rhs._v;
-            if (_v >= _umod()) _v -= _umod();
-            return *this;
-        }
-        mint &operator-=(const long long &rhs) {
-            _v += _umod() - rhs;
             if (_v >= _umod()) _v -= _umod();
             return *this;
         }
@@ -110,48 +101,29 @@ namespace Modulo {
             _v = tmp % _umod();
             return *this;
         }
-        mint &operator*=(const long long &rhs) {
-            unsigned long long tmp = _v;
-            tmp *= rhs;
-            _v = tmp % _umod();
-            return *this;
-        }
 
         mint &operator/=(const mint &rhs) {
             return *this = *this * rhs.inv();
         }
-        mint &operator/=(const long long &rhs) {
-            return *this = *this * mint(rhs).inv();
-        }
+
 
         /* Binary operators */
-        mint operator+(const mint &rhs) {
-            return *this += rhs;
-        }
-        mint operator+(const long long &rhs) {
-            return *this += rhs;
+        friend mint operator+(const mint &lhs, const mint &rhs) {
+            return mint(lhs) += rhs;
         }
 
-        mint operator-(const mint &rhs) {
-            return *this - rhs;
-        }
-        mint operator-(const long long &rhs) {
-            return *this - rhs;
+        friend mint operator-(const mint &lhs, const mint &rhs) {
+            return mint(lhs) -= rhs;
         }
 
-        mint operator*(const mint &rhs) {
-            return *this * rhs;
-        }
-        mint operator*(const long long &rhs) {
-            return *this * rhs;
+        friend mint operator*(const mint &lhs, const mint &rhs) {
+            return mint(lhs) *= rhs;
         }
 
-        mint operator/(const mint &rhs) {
-            return *this / rhs;
+        friend mint operator/(const mint &lhs, const mint &rhs) {
+            return mint(lhs) /= rhs;
         }
-        mint operator/(const long long &rhs) {
-            return *this / rhs;
-        }
+
 
         /* Unary operators */
         mint operator+() { return *this; }
@@ -205,6 +177,16 @@ namespace Modulo {
 
         bool operator<=(const long long& other) { return _v <= other; }
 
+        /* I/O operator */
+        friend std::ostream& operator<<(std::ostream& out, const mint& m){
+            out << m._v;
+            return out;
+        }
+        friend std::istream& operator>>(std::istream& in, mint& m){
+            in >> m._v;
+            m._v %= _umod();
+            return in;
+        }
     };
 }
 
