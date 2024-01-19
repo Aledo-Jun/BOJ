@@ -4,25 +4,27 @@ using ull = unsigned long long;
 
 using namespace std;
 
-namespace string_utils {
-
+namespace Utils
+{
+namespace String
+{
     // Trie data structure for checking the existence of the prefix
     // Note : the insertion process should be in sorted order
     struct TrieNode {
-        TrieNode* children[10]{};
+        TrieNode *children[10]{};
         bool isEnd;
 
         TrieNode() {
-            for (auto & i : children)
+            for (auto &i: children)
                 i = nullptr;
             isEnd = false;
         }
     };
 
-    bool insertWord(TrieNode* root, const string& word) {
-        TrieNode* current = root;
+    bool insertWord(TrieNode *root, const string &word) {
+        TrieNode *current = root;
 
-        for (char c : word) {
+        for (char c: word) {
             int index = c - '0';
 
             if (current->children[index] == nullptr)
@@ -38,7 +40,7 @@ namespace string_utils {
         return false;
     }
 
-    bool can_be_palindrome(const string& s, int start, int end) {
+    bool can_be_palindrome(const string &s, int start, int end) {
         while (start < end) {
             if (s[start] != s[end])
                 return false;
@@ -49,11 +51,11 @@ namespace string_utils {
     }
 
     // Find pattern's partial matches(failure table) for KMP algorithm
-    vector<int> getPartialMatch(const string& P){
+    vector<int> getPartialMatch(const string &P) {
         ull m = P.length();
         vector<int> pi(m, 0);
         int match = 0;
-        for (int i = 1; i < m; i++){
+        for (int i = 1; i < m; i++) {
             while (match > 0 && P[i] != P[match])
                 match = pi[match - 1];
             if (P[i] == P[match])
@@ -63,18 +65,18 @@ namespace string_utils {
     }
 
     // KMP algorithm to find the position of T's substring that matches P
-    vector<int> kmpSearch(const string& T, const string& P){
+    vector<int> kmpSearch(const string &T, const string &P) {
         ull n = T.length();
         ull m = P.length();
         vector<int> result;
         vector<int> pi = getPartialMatch(P);
         int match = 0;
-        for (int i = 0; i < n; i++){
+        for (int i = 0; i < n; i++) {
             while (match > 0 && T[i] != P[match])
                 match = pi[match - 1];
-            if (T[i] == P[match]){
+            if (T[i] == P[match]) {
                 match++;
-                if (match == m){
+                if (match == m) {
                     result.push_back(i - m + 1);
                     match = pi[match - 1];
                 }
@@ -83,5 +85,5 @@ namespace string_utils {
         return result;
     }
 
-}// End string_utils
-
+} // namespace String
+} // namespace Utils
