@@ -5,70 +5,79 @@
 
 using namespace std;
 
-template<typename T>
-using is_signed_int =
-        typename std::conditional_t<std::is_integral_v<T> && std::is_signed_v<T>,
-                                  std::true_type,
-                                  std::false_type>;
-template<typename T>
-using is_signed_int_t = std::enable_if_t<is_signed_int<T>::value>;
+namespace Utils::Math {
+    constexpr long long safe_mod(long long x, long long m) {
+        x %= m;
+        if (x < 0) x += m;
+        return x;
+    }
 
-template<typename T>
-using is_unsigned_int =
-        typename std::conditional_t<std::is_integral_v<T> && std::is_unsigned_v<T>,
-                                  std::true_type,
-                                  std::false_type>;
-template<typename T>
-using is_unsigned_int_t = std::enable_if_t<is_unsigned_int<T>::value>;
-
-
-namespace math_utils {
-
-    int gcd(int a, int b) {
+    constexpr long long gcd(long long a, long long b) {
         if (b == 0) {
             return a;
         }
         return gcd(b, a % b);
     }
 
-    const int MOD = 1'000'000'007;
+    constexpr std::pair<long long, long long> inv_gcd(long long a, long long b) {
+        a = safe_mod(a, b);
+        if (a == 0) return {b, 0};
 
-    int pow_mod(int a, int pow) {
+        long long s = b, t = a;
+        long long m0 = 0, m1 = 1;
+
+        while (t) {
+            long long u = s / t;
+            s -= t * u;
+            m0 -= m1 * u;
+
+            auto tmp = s;
+            s = t;
+            t = tmp;
+            tmp = m0;
+            m0 = m1;
+            m1 = tmp;
+        }
+        if (m0 < 0) m0 += b / s;
+        return {s, m0};
+    }
+
+    int pow_mod(int a, int pow, int MOD) {
         int base = a;
         int res = 1;
         while (pow > 0) {
             if (pow & 1) {
-                res = (int)(1LL * res * base) % MOD;
+                res = (int) (1LL * res * base) % MOD;
             }
-            base = (int)(1LL * base * base) % MOD;
+            base = (int) (1LL * base * base) % MOD;
             pow >>= 1;
         }
         return res;
     }
 
-    int factorial_mod(int n) {
+    int factorial_mod(int n, int MOD) {
         int res = 1;
         for (int i = 1; i <= n; i++) {
-            res = (int)(1LL * res * i) % MOD;
+            res = (int) (1LL * res * i) % MOD;
         }
         return res;
     }
 
-    int _binomial_coefficient(int n, int k) {
+    int _binomial_coefficient(int n, int k, int MOD) {
         // Calculate n! / (k! * (n-k)!)
-        int numerator = factorial_mod(n);
-        int denominator = (int)(1LL * factorial_mod(k) * factorial_mod(n - k)) % MOD;
+        int numerator = factorial_mod(n, MOD);
+        int denominator = (int) (1ULL * factorial_mod(k, MOD) * factorial_mod(n - k, MOD)) % MOD;
 
-        int denominator_inverse = pow_mod(denominator, MOD - 2);
+        int denominator_inverse = pow_mod(denominator, MOD - 2, MOD);
 
-        int result = (int)(1LL * numerator * denominator_inverse) % MOD;
+        int result = (int) (1ULL * numerator * denominator_inverse) % MOD;
         return result;
     }
 
     // Calculate the binomial coefficient using Lucas' theorem
-    int binomial_coefficient(int n, int k) {
+    int binomial_coefficient(int n, int k, int MOD) {
         int result = 1;
-        while (n > 0 && k > 0){
+        while (n > 0 && k > 0) {
             int n_remain = n % MOD;
             int k_remain = k % MOD;
             n /= MOD;
@@ -77,28 +86,29 @@ namespace math_utils {
                 result = 0;
                 break;
             }
-            result = (result * binomial_coefficient(n_remain, k_remain)) % MOD;
+            result = (result * binomial_coefficient(n_remain, k_remain, MOD)) % MOD;
         }
         return result;
     }
 
     // Calculate the sum of the geometric series from r^0 to r^n recursively
-    int geometric_sum(int r, int n){
+    int geometric_sum(int r, int n, int MOD) {
         if (n == 0) return 1;
         if (n == 1) return (r + 1) % MOD;
         if (n % 2 == 0)
-            return (int)(1LL * geometric_sum(r, n / 2 - 1) * (1 + pow_mod(r, n / 2)) % MOD + pow_mod(r, n)) % MOD;
-        return (int)(1LL * geometric_sum(r, n / 2) * (1 + pow_mod(r, n / 2 + 1))) % MOD;
+            return (int) (1LL * geometric_sum(r, n / 2 - 1, MOD) * (1 + pow_mod(r, n / 2, MOD)) % MOD + pow_mod(r, n, MOD)) % MOD;
+        return (int) (1LL * geometric_sum(r, n / 2, MOD) * (1 + pow_mod(r, n / 2 + 1, MOD))) % MOD;
     }
 
+    /// TODO: Make own Matrix class
     // Matrix size
     const int SIZE = 2;
     template<typename T> using matrix = vector<vector<T>>;
 
     // Matrix multiplication operation
     template<typename T,
-            typename std::enable_if_t<is_arithmetic_v<T>>* = nullptr>
-    void multiply(matrix<T> &A, matrix<T> &B) {
+            typename std::enable_if_t<is_arithmetic_v<T>> * = nullptr>
+    void multiply(matrix<T> &A, matrix<T> &B, int MOD) {
         matrix<T> temp(SIZE, vector<T>(SIZE));
 
         for (int i = 0; i < SIZE; i++) {
@@ -118,18 +128,18 @@ namespace math_utils {
 
     // Matrix exponentiation
     template<typename T,
-            typename std::enable_if_t<is_arithmetic_v<T>>* = nullptr>
-    void matrixPow(matrix<T> &A, int n) {
+            typename std::enable_if_t<is_arithmetic_v<T>> * = nullptr>
+    void matrixPow(matrix<T> &A, int n, int MOD) {
         matrix<T> result(SIZE, vector<T>(SIZE, 0));
         for (int i = 0; i < SIZE; i++)
             result[i][i] = 1; // Identity matrix
 
         while (n > 0) {
             if (n & 1) {
-                multiply(result, A);
+                multiply(result, A, MOD);
             }
 
-            multiply(A, A);
+            multiply(A, A, MOD);
             n >>= 1;
         }
 
@@ -140,25 +150,26 @@ namespace math_utils {
         }
     }
 
-    int fib(int n){
+    int fib(int n, int MOD) {
         if (n == 0) return 0;
         if (n == 1) return 1;
 
         matrix<int> A = {{1, 1},
                          {1, 0}};
-        matrixPow(A, n - 1);
+        matrixPow(A, n - 1, MOD);
 
         return A[0][0];
     }
 
-    int subtract(int a, int b) {
+    int subtract(int a, int b, int MOD) {
         return (a - b + MOD) % MOD;
     }
-    int multiply(int a, int b) {
-        return (int)((long long)a * b) % MOD;
+
+    int multiply(int a, int b, int MOD) {
+        return (int) ((long long) a * b) % MOD;
     }
 
-    int modularDeterminant(matrix<int> &mat) {
+    int modularDeterminant(matrix<int> &mat, int MOD) {
         int n = (int) mat.size();
         int det = 1;
 
@@ -176,22 +187,22 @@ namespace math_utils {
 
             if (pivot != i) {
                 swap(mat[i], mat[pivot]);
-                det = multiply(det, -1);  // Swap rows, so negate the determinant
+                det = multiply(det, -1, MOD);  // Swap rows, so negate the determinant
             }
 
             // Reduce to row echelon form
             int pivotElement = mat[i][i];
-            int pivotInverse = pow_mod(pivotElement, MOD - 2);
+            int pivotInverse = pow_mod(pivotElement, MOD - 2, MOD);
 
             for (int j = i + 1; j < n; j++) {
-                int factor = multiply(mat[j][i], pivotInverse);
+                int factor = multiply(mat[j][i], pivotInverse, MOD);
                 for (int k = i; k < n; k++) {
-                    mat[j][k] = subtract(mat[j][k], multiply(mat[i][k], factor));
+                    mat[j][k] = subtract(mat[j][k], multiply(mat[i][k], factor, MOD), MOD);
                 }
             }
 
             // Update determinant
-            det = multiply(det, pivotElement);
+            det = multiply(det, pivotElement, MOD);
         }
 
         return det;
@@ -202,18 +213,18 @@ namespace math_utils {
      * @param n
      * @return vector of primes that is less or equal than @p n
      */
-    std::vector<int> prime_sieve(int n){
-        std::vector<bool> is_prime = std::vector<bool>(n+1, true);
+    std::vector<int> prime_sieve(int n) {
+        std::vector<bool> is_prime = std::vector<bool>(n + 1, true);
         is_prime[0] = is_prime[1] = false;
-        for (int i = 2; i * i <= n; i++){
-            if (is_prime[i]){
-                for (int j = i * i; j <= n; j += i){
+        for (int i = 2; i * i <= n; i++) {
+            if (is_prime[i]) {
+                for (int j = i * i; j <= n; j += i) {
                     is_prime[j] = false;
                 }
             }
         }
         std::vector<int> sieve;
-        for (int i = 2; i <= n; i++){
+        for (int i = 2; i <= n; i++) {
             if (is_prime[i])
                 sieve.push_back(i);
         }
@@ -223,12 +234,12 @@ namespace math_utils {
     // Function to check if the given number is prime
     // It uses the fact that every prime number larger than 5 is
     // in the form of 6k - 1 or 6k + 1
-    bool isPrime(int n){
+    bool isPrime(int n) {
         if (n <= 1) return false;
         if (n <= 3) return true;
         if (n % 2 == 0 || n % 3 == 0) return false;
 
-        for (int i = 5; i * i <= n; i += 6){
+        for (int i = 5; i * i <= n; i += 6) {
             if (n % i == 0 || n % (i + 2) == 0)
                 return false;
         }
@@ -237,11 +248,11 @@ namespace math_utils {
 
     // Count the number of positive integers less than or equal to n
     // that are coprime with n, using Euler's totient function.
-    int phi(int n){
+    int phi(int n) {
         int res = n;
 
-        for (int p = 2; p * p <= n; p++){
-            if (n % p == 0){
+        for (int p = 2; p * p <= n; p++) {
+            if (n % p == 0) {
                 while (n % p == 0)
                     n /= p;
 
@@ -255,6 +266,5 @@ namespace math_utils {
         return res;
     }
 
-}// End math_utils
-
+} // namespace Utils
 #endif
