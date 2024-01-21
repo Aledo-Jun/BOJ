@@ -45,6 +45,7 @@ namespace Modulo {
         [[nodiscard]]
         unsigned value() const { return _v; }
 
+        [[nodiscard]]
         mint pow(long long n) const {
             mint base = *this, res = 1;
             while (n > 0) {
@@ -55,6 +56,7 @@ namespace Modulo {
             return res;
         }
 
+        [[nodiscard]]
         mint inv() const {
             return pow(_umod() - 2);
         }
@@ -98,8 +100,8 @@ namespace Modulo {
         }
 
         mint &operator-=(const mint &rhs) {
-            _v += _umod() - rhs._v;
-            if (_v >= _umod()) _v -= _umod();
+            _v -= rhs._v;
+            if (_v >= _umod()) _v += _umod();
             return *this;
         }
 
