@@ -313,32 +313,9 @@ namespace NTT
     using namespace Math;
     using namespace Modulo;
 
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    inline mint pow(mint a, int p) {
-        mint res = 1;
-        while (p > 0) {
-            if (p & 1) res *= a;
-            a *= a;
-            p >>= 1;
-        }
-        return res;
-    }
-
-    template<typename mint,
-            int ROOT = primitive_root<mint::mod()>,
-            Modulo::is_modint_t<mint> * = nullptr>
-    vector<mint> get_roots(int n, bool _is_inv) {
-        mint x = pow<mint>(ROOT, (mint::mod() - 1) / n);
-        if (_is_inv) x = pow(x, mint::mod() - 2);
-
-        vector<mint> root(n >> 1, 1);
-        for (int i = 1; i < (n >> 1); i++) {
-            root[i] = root[i - 1] * x;
-        }
-        return root;
-    }
-
-    template<typename mint, is_modint_t<mint> * = nullptr>
+    template<typename mint, is_modint_t<mint> * = nullptr,
+            unsigned ROOT = primitive_root<mint::mod()>,
+            unsigned MOD = mint::mod()>
     void _ntt(std::vector<mint> &_v, bool _is_inv) {
         int n = (int) _v.size();
         // bit-reversal
@@ -348,14 +325,17 @@ namespace NTT
             if (i < j) std::swap(_v[i], _v[j]);
         }
 
-        static const auto roots = get_roots<mint>(n, _is_inv);
-        for (int i = 2; i <= n; i <<= 1) {
-            int x = n / i;
-            for (int j = 0; j < n; j += i) {
-                for (int k = 0; k < (i >> 1); k++) {
-                    mint tmp = _v[(i >> 1) + j + k] * roots[x * k];
-                    _v[(i >> 1) + j + k] = _v[j + k] - tmp;
+        for (int i = 1; i < n; i <<= 1) {
+            mint w = mint(ROOT).pow(MOD / i >> 1);
+            if (_is_inv) w = w.inv();
+            for (int j = 0; j < n; j += i << 1) {
+                mint z = 1;
+                for (int k = 0; k < i; k++) {
+                    mint tmp = _v[i + j + k] * z;
+                    _v[i + j + k] = _v[j + k] - tmp;
                     _v[j + k] += tmp;
+
+                    z *= w;
                 }
             }
         }
@@ -365,8 +345,8 @@ namespace NTT
         }
     }
 
-    template<typename T, is_modint_t<T> * = nullptr>
-    void ntt(std::vector<T> &v) {
+    template<typename mint, is_modint_t<mint> * = nullptr>
+    void ntt(std::vector<mint> &v) {
         _ntt(v, false);
     }
 
@@ -380,8 +360,8 @@ namespace NTT
         return _v;
     }
 
-    template<typename T, is_modint_t<T> * = nullptr>
-    void inv_ntt(std::vector<T> &v) {
+    template<typename mint, is_modint_t<mint> * = nullptr>
+    void inv_ntt(std::vector<mint> &v) {
         _ntt(v, true);
     }
 
@@ -396,8 +376,8 @@ namespace NTT
     }
 
     template<typename mint, is_modint_t<mint> * = nullptr>
-    std::vector<mint> _naive_convolution(const std::vector<mint> &_a,
-                                         const std::vector<mint> &_b) {
+    void _naive_convolution(std::vector<mint> &_a,
+                            const std::vector<mint> &_b) {
         int n = (int) _a.size();
         int m = (int) _b.size();
         std::vector<mint> res(n + m - 1);
@@ -414,12 +394,12 @@ namespace NTT
                 }
             }
         }
-        return res;
+        _a = res;
     }
 
     template<typename mint, is_modint_t<mint> * = nullptr>
-    std::vector<mint> _ntt_convolution(std::vector<mint> &_a,
-                                       std::vector<mint> &_b) {
+    void _ntt_convolution(std::vector<mint> &_a,
+                          std::vector<mint> &_b) {
         int n = (int) _a.size();
         int m = (int) _b.size();
         int len = 1;
@@ -434,28 +414,28 @@ namespace NTT
             _a[i] *= _b[i];
 
         _ntt(_a, true);
-        return _a;
     }
 
     template<typename mint, is_modint_t<mint> * = nullptr>
-    std::vector<mint> _convolution(std::vector<mint> &&_a,
-                                   std::vector<mint> &&_b) {
+    void _convolution(std::vector<mint> &&_a,
+                      std::vector<mint> &&_b) {
         int n = (int) _a.size();
         int m = (int) _b.size();
-        if (n == 0 || m == 0) return {};
+        if (n == 0 || m == 0) return;
         if (std::min(n, m) <= 60) return _naive_convolution(_a, _b);
         return _ntt_convolution(_a, _b);
     }
 
     template<typename mint, is_modint_t<mint> * = nullptr>
-    std::vector<mint> _convolution(std::vector<mint> &_a,
-                                   std::vector<mint> &_b) {
+    void _convolution(std::vector<mint> &_a,
+                      std::vector<mint> &_b) {
         int n = (int) _a.size();
         int m = (int) _b.size();
-        if (n == 0 || m == 0) return {};
+        if (n == 0 || m == 0) return;
         if (std::min(n, m) <= 60) return _naive_convolution(_a, _b);
         return _ntt_convolution(_a, _b);
     }
+
     template<int MOD = 998244353,
             typename T,
             std::enable_if_t<std::is_integral_v<T>> * = nullptr>
@@ -468,11 +448,11 @@ namespace NTT
         using mint = ModInt<MOD>;
 
         std::vector<mint> _a(a.begin(), a.end()), _b(b.begin(), b.end());
-        auto conv = _convolution(std::move(_a), std::move(_b));
+        _convolution(std::move(_a), std::move(_b));
 
         std::vector<T> res(n + m - 1);
         for (int i = 0; i < n + m - 1; i++)
-            res[i] = conv[i].value();
+            res[i] = _a[i].value();
 
         return res;
     }
