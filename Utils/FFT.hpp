@@ -11,7 +11,7 @@
 #include <complex>
 #include <vector>
 #include "Modulo.hpp"
-using namespace std;
+
 namespace Utils
 {
 namespace FFT {
