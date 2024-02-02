@@ -5,17 +5,19 @@ namespace Utils
 {
 namespace DisjointSet
 {
-    class disjointSet {
+    template<bool Union_By_Rank = true>
+    class DisjointSet {
+    private:
         const int def_sz = 1001;
         vector<int> parent;
         vector<int> rank;
     public:
-        disjointSet() {
+        DisjointSet() {
             parent.assign(def_sz, 0);
             rank.assign(def_sz, 0);
         }
 
-        disjointSet(int sz) {
+        DisjointSet(int sz) {
             parent.assign(sz, 0);
             for (int i = 0; i < sz; i++)
                 parent[i] = i;
@@ -30,6 +32,9 @@ namespace DisjointSet
             return parent[x];
         }
 
+        // Union By Rank,
+        // i.e. the parent relation could be relational(not specified).
+        template<std::enable_if_t<Union_By_Rank>* = nullptr>
         void uni(int x, int y) {
             int rootx = find(x);
             int rooty = find(y);
@@ -45,6 +50,16 @@ namespace DisjointSet
                 }
             }
         }
-    }; // class disjointSet
+
+        // Dangle y to the root of x
+        template<std::enable_if_t<!Union_By_Rank>* = nullptr>
+        void uni(int x, int y) {
+            int rootx = find(x);
+            int rooty = find(y);
+
+            if (rootx != rooty)
+                parent[rooty] = rootx;
+        }
+    }; // class DisjointSet
 } // namespace DisjointSet
 } // namespace Utils
