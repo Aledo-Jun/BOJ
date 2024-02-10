@@ -12,16 +12,28 @@ namespace DisjointSet
         vector<int> parent;
         vector<int> rank;
     public:
+        template<std::enable_if_t<Union_By_Rank>* = nullptr>
         DisjointSet() {
             parent.assign(def_sz, 0);
             rank.assign(def_sz, 0);
+        }
+
+        DisjointSet() {
+            parent.assign(def_sz, 0);
+        }
+
+        template<std::enable_if_t<Union_By_Rank>* = nullptr>
+        DisjointSet(int sz) {
+            parent.assign(sz, 0);
+            for (int i = 0; i < sz; i++)
+                parent[i] = i;
+            rank.assign(sz, 0);
         }
 
         DisjointSet(int sz) {
             parent.assign(sz, 0);
             for (int i = 0; i < sz; i++)
                 parent[i] = i;
-            rank.assign(sz, 0);
         }
 
         // find the root of x
@@ -52,7 +64,6 @@ namespace DisjointSet
         }
 
         // Dangle y to the root of x
-        template<std::enable_if_t<!Union_By_Rank>* = nullptr>
         void uni(int x, int y) {
             int rootx = find(x);
             int rooty = find(y);
