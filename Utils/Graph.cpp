@@ -13,20 +13,29 @@ using namespace std;
 
 namespace Utils
 {
-namespace Graph
-{
+namespace Graph {
+
+    // #pragma is for an unusual bug(it seems to be) that ide warns
+    // that the template function's parameters are never used when clearly they're used.
+    #pragma ide diagnostic push
+    #pragma ide diagnostic ignored "UnusedParameter"
+
+    //
+    // Note: Assumes that graph is 1-indexed //
+    //
+
     template<typename T> using graph = vector<vector<pair<int, T>>>;
     template<typename T> using matrix = vector<vector<T>>;
-    const int INF = INT_MAX;
+    const size_t INF = LLONG_MAX;
 
-    vector<int> dijkstra(const graph<int> &g, int start) {
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
-        vector<int> dist(g.size(), INF);
+    template<typename T>
+    std::vector<std::size_t> dijkstra(const graph<T> &g, int start) {
+        std::priority_queue<pair<std::size_t, int>, vector<pair<std::size_t, int>>, std::greater<>> pq;
+        std::vector<std::size_t> dist(g.size(), INF);
         pq.emplace(0, start);
         dist[start] = 0;
         while (!pq.empty()) {
-            int distance = pq.top().first;
-            int u = pq.top().second;
+            const auto& [distance, u] = pq.top();
             pq.pop();
 
             if (distance > dist[u]) continue;
@@ -41,9 +50,10 @@ namespace Graph
         return dist;
     }
 
-    vector<int> bellmanFord(const graph<int> &g, int start) {
-        int n = g.size() - 1;
-        vector<int> dist(n + 1, INF);
+    template<typename T>
+    std::vector<std::size_t> bellmanFord(const graph<T> &g, int start) {
+        int n = (int) g.size() - 1;
+        std::vector<std::size_t> dist(n + 1, INF);
         dist[start] = 0;
 
         for (int i = 1; i < n; i++) {
@@ -60,8 +70,9 @@ namespace Graph
 /**
  * Verify whether the graph has a negative cycle or not when called <i>after</i> calling bellmanFord
  */
-    bool is_there_negative_cycle(const graph<int> &g, const vector<int> &dist) {
-        int n = g.size() - 1;
+    template<typename T>
+    bool is_there_negative_cycle(const graph<T> &g, const std::vector<std::size_t> &dist) {
+        int n = (int) g.size() - 1;
         for (int u = 1; u <= n; u++) {
             if (g[u].empty()) continue;
             for (const auto &[v, w]: g[u]) {
@@ -72,9 +83,10 @@ namespace Graph
         return false;
     }
 
-    matrix<int> floydWarshall(const graph<int> &g) {
-        int n = g.size() - 1;
-        matrix<int> res(n + 1, vector<int>(n + 1, INT_MAX));
+    template<typename T>
+    matrix<std::size_t> floydWarshall(const graph<T> &g) {
+        int n = (int) g.size() - 1;
+        matrix<std::size_t> res(n + 1, std::vector<std::size_t>(n + 1, INF));
         for (int i = 1; i <= n; i++) {
             for (const auto &e: g[i]) {
                 res[i][e.first] = e.second;
@@ -83,14 +95,15 @@ namespace Graph
         for (int k = 1; k <= n; k++) {
             for (int i = 1; i <= n; i++) {
                 for (int j = 1; j <= n; j++) {
-                    res[i][j] = min(res[i][j], res[i][k] + res[k][j]);
+                    res[i][j] = std::min(res[i][j], res[i][k] + res[k][j]);
                 }
             }
         }
         return res;
     }
 
-    void dfs_for_topological_order(graph<int> &g, int u, vector<bool> &visited, vector<int> &order) {
+    template<typename T>
+    void dfs_for_topological_order(graph<T> &g, int u, std::vector<bool> &visited, std::vector<int> &order) {
         if (visited[u]) return;
         visited[u] = true;
 
@@ -101,10 +114,11 @@ namespace Graph
         order.emplace_back(u);
     }
 
-    vector<int> topological_order(graph<int> &g) {
-        int n = g.size() - 1;
-        vector<bool> visited(n + 1, false);
-        vector<int> result;
+    template<typename T>
+    std::vector<int> topological_order_dfs(const graph<T> &g) {
+        int n = (int) g.size() - 1;
+        std::vector<bool> visited(n + 1, false);
+        std::vector<int> result;
 
         for (int i = 1; i <= n; i++)
             dfs_for_topological_order(g, i, visited, result);
@@ -113,12 +127,39 @@ namespace Graph
         return result;
     }
 
-    using namespace Utils::DisjointSet;
+    template<typename T>
+    std::vector<int> topological_order_degree(const graph<T> &g) {
+        int n = (int) g.size() - 1;
+        std::vector<int> in_degree(g.size(), 0);
+        std::vector<int> result;
+        std::queue<int> q;
+        for (int u = 1; u <= n; u++){
+            for (const auto&[v, w] : g[u])
+                in_degree[v]++;
+        }
+        for (int u = 1; u <= n; u++){
+            if (in_degree[u] == 0) q.emplace(u);
+        }
 
+        while (!q.empty()){
+            int u = q.front(); q.pop();
+            result.emplace_back(u);
+
+            for (const auto&[v, w] : g[u]){
+                in_degree[v]--;
+                if (in_degree[v] == 0) q.emplace(v);
+            }
+        }
+
+        return result;
+    }
+
+    template<typename T>
     struct Edge {
-        int u, v, w;
+        int u, v;
+        T w;
 
-        Edge(int u, int v, int w) : u(u), v(v), w(w) {};
+        Edge(int u, int v, T w) : u(u), v(v), w(w) {};
 
         bool operator<(const Edge &other) const {
             return w < other.w;
@@ -129,15 +170,13 @@ namespace Graph
         }
     };
 
-    int minimumSpanningTree(const vector<Edge> &g) {
-        priority_queue<Edge, vector<Edge>, greater<>> minHeap;
+    template<typename T>
+    std::size_t minimumSpanningTree(const std::vector<Edge<T>> &g) {
+        std::priority_queue<Edge<T>, std::vector<Edge<T>>, std::greater<>> minHeap(g.begin(), g.end());
 
-        for (int i = 0; i < g.size(); i++)
-            minHeap.emplace(g[i]);
+        Utils::DisjointSet::DisjointSet ds(g.size() + 1);
 
-        disjointSet ds(g.size() + 1);
-
-        int res = 0;
+        std::size_t res = 0;
         while (!minHeap.empty()) {
             auto e = minHeap.top();
             minHeap.pop();
@@ -149,7 +188,8 @@ namespace Graph
         return res;
     }
 
-    void dfs_scc(graph<int> &g, int u, vector<bool> &visited, stack<int> &finishing) {
+    template<typename T>
+    void dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::stack<int> &finishing) {
         if (visited[u]) return;
         visited[u] = true;
 
@@ -159,7 +199,8 @@ namespace Graph
         finishing.emplace(u);
     }
 
-    void inv_dfs_scc(graph<int> &g, int u, vector<bool> &visited, vector<int> &curr_scc) {
+    template<typename T>
+    void inv_dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::vector<int> &curr_scc) {
         for (const auto &e: g[u]) {
             if (visited[e.first]) continue;
             visited[e.first] = true;
@@ -168,12 +209,18 @@ namespace Graph
         curr_scc.emplace_back(u);
     }
 
-/**
- * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
- */
-    matrix<int> scc(graph<int> &g, graph<int> &g_r) {
-        vector<bool> visited(g.size(), false);
-        stack<int> finishing_time;
+ /**
+  * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
+  *
+  * @tparam T ValueType
+  * @param g The given graph
+  * @param g_r The inverse of the given graph
+  * @return std::vector of SCCs
+  */
+    template<typename T>
+    matrix<int> scc(const graph<T> &g, const graph<T> &g_r) {
+        std::vector<bool> visited(g.size(), false);
+        std::stack<int> finishing_time;
         for (int i = 1; i < g.size(); i++) {
             if (visited[i]) continue;
             dfs_scc(g, i, visited, finishing_time);
@@ -181,7 +228,7 @@ namespace Graph
 
         visited.assign(g.size(), false);
         matrix<int> res;
-        vector<int> curr_scc;
+        std::vector<int> curr_scc;
         while (!finishing_time.empty()) {
             int u = finishing_time.top();
             finishing_time.pop();
@@ -194,6 +241,6 @@ namespace Graph
 
         return res;
     }
-
+    #pragma ide diagnostic pop
 } // namespace Graph
 } // namespace Utils
