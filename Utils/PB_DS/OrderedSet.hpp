@@ -16,7 +16,7 @@ namespace OrderedSet
     using namespace std;
     using namespace __gnu_pbds;
 
-    using ordered_set = __gnu_pbds::tree<
+    using ordered_set = ::__gnu_pbds::tree<
             int,
             __gnu_pbds::null_type,
             std::less<>,
@@ -35,6 +35,6 @@ namespace OrderedSet
         auto it = OS.find_by_order(index);
         if (*it == val) OS.erase(it);
     }
-}
-}
+} // namespace OrderedSet
+} // namespace Utils
 #endif //BOJ_ORDEREDSET_HPP
