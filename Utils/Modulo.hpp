@@ -92,6 +92,7 @@ namespace TypeTraits {
 
     template<typename T>
     using is_modint = std::is_base_of<modint_base, T>;
+
     template<typename T>
     using is_modint_t = std::enable_if_t<is_modint<T>::value>;
 } // namespace TypeTraits
