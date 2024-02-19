@@ -2,8 +2,9 @@
 // Created by june0 on 2024-02-13.
 //
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include <functional>
+#include <cmath>
 
 using namespace std;
 
@@ -46,7 +47,7 @@ namespace Tree
 
     class LCA {
     private:
-        const int MAX_N = 100001; // Adjust this based on your maximum number of nodes
+        int MAX_BIT;
 
         std::vector<int> depth; // Depth of each node
         std::vector<std::vector<int>> parent; // Binary Lifting table
@@ -54,6 +55,10 @@ namespace Tree
 
     public:
         LCA(const graph<int>& adj) : adj(adj) {
+            int sz = (int) adj.size();
+            MAX_BIT = std::ceil(std::log2(sz));
+            depth.resize(sz);
+            parent.resize(sz, vector<int>(MAX_BIT));
             make_tree(1, 0, 0);
         }
 
