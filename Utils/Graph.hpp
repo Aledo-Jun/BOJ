@@ -5,6 +5,7 @@
 #include <stack>
 #include <vector>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <limits.h>
 #include "DisjointSet.hpp"
@@ -237,6 +238,51 @@ namespace Graph {
             inv_dfs_scc(g_r, u, visited, curr_scc);
             res.emplace_back(curr_scc);
             curr_scc.clear();
+        }
+
+        return res;
+    }
+
+
+    template<typename T>
+    int dfs_articulation_points(const graph<T>& g, int u, bool is_root, vector<int>& mark, int& cnt, set<int>& res) {
+        mark[u] = cnt++;
+        int ret = mark[u];
+
+        int child = 0;
+        for (const auto &[v, w]: g[u]) {
+            if (mark[v] == 0) {
+                child++;
+                int lowest = dfs_articulation_points(g, v, false, mark, cnt, res);
+                if (!is_root && lowest >= mark[u]) {
+                    res.emplace(u);
+                }
+                ret = min(ret, lowest);
+            } else {
+                ret = min(ret, mark[v]);
+            }
+        }
+
+        if (is_root && child >= 2)
+            res.emplace(u);
+
+        return ret;
+    }
+
+    /**
+     * Find articulation points(a.k.a. cut-vertices) of the given graph.
+     * @param g The graph (assumed to be 1-indexed)
+     * @return std::set of the articulation points
+     */
+    template<typename T>
+    std::set<int> articulation_points(const graph<T>& g){
+        int n = (int) g.size() - 1;
+        std::set<int> res;
+        vector<int> mark(n + 1, 0);
+        int cnt = 1;
+
+        for (int i = 1; i <= n; i++){
+            if (mark[i] == 0) dfs_articulation_points(g, i, true, mark, cnt, res);
         }
 
         return res;
