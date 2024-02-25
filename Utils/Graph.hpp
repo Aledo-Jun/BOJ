@@ -189,59 +189,59 @@ namespace Graph {
         return res;
     }
 
-    template<typename T>
-    void dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::stack<int> &finishing) {
-        if (visited[u]) return;
-        visited[u] = true;
-
-        for (const auto &e: g[u]) {
-            dfs_scc(g, e.first, visited, finishing);
-        }
-        finishing.emplace(u);
-    }
-
-    template<typename T>
-    void inv_dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::vector<int> &curr_scc) {
-        for (const auto &e: g[u]) {
-            if (visited[e.first]) continue;
-            visited[e.first] = true;
-            inv_dfs_scc(g, e.first, visited, curr_scc);
-        }
-        curr_scc.emplace_back(u);
-    }
-
- /**
-  * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
-  *
-  * @tparam T ValueType
-  * @param g The given graph
-  * @param g_r The inverse of the given graph
-  * @return std::vector of SCCs
-  */
-    template<typename T>
-    matrix<int> scc(const graph<T> &g, const graph<T> &g_r) {
-        std::vector<bool> visited(g.size(), false);
-        std::stack<int> finishing_time;
-        for (int i = 1; i < g.size(); i++) {
-            if (visited[i]) continue;
-            dfs_scc(g, i, visited, finishing_time);
-        }
-
-        visited.assign(g.size(), false);
-        matrix<int> res;
-        std::vector<int> curr_scc;
-        while (!finishing_time.empty()) {
-            int u = finishing_time.top();
-            finishing_time.pop();
-            if (visited[u]) continue;
+        template<typename T>
+        void dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::stack<int> &finishing) {
+            if (visited[u]) return;
             visited[u] = true;
-            inv_dfs_scc(g_r, u, visited, curr_scc);
-            res.emplace_back(curr_scc);
-            curr_scc.clear();
+
+            for (const auto &e: g[u]) {
+                dfs_scc(g, e.first, visited, finishing);
+            }
+            finishing.emplace(u);
         }
 
-        return res;
-    }
+        template<typename T>
+        void inv_dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::set<int> &curr_scc) {
+            for (const auto &e: g[u]) {
+                if (visited[e.first]) continue;
+                visited[e.first] = true;
+                inv_dfs_scc(g, e.first, visited, curr_scc);
+            }
+            curr_scc.emplace(u); // may be modified when just the index of each vertex is needed.
+        }
+
+/**
+ * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
+ *
+ * @tparam T ValueType
+ * @param g The given graph
+ * @param g_r The inverse of the given graph
+ * @return std::set of SCCs
+ */
+        template<typename T>
+        vector<set<int>> scc(const graph<T> &g, const graph<T> &g_r) {
+            std::vector<bool> visited(g.size(), false);
+            std::stack<int> finishing_time;
+            for (int i = 1; i < g.size(); i++) {
+                if (visited[i]) continue;
+                dfs_scc(g, i, visited, finishing_time);
+            }
+
+            visited.assign(g.size(), false);
+            vector<set<int>> res;
+            std::set<int> curr_scc;
+            while (!finishing_time.empty()) {
+                int u = finishing_time.top();
+                finishing_time.pop();
+                if (visited[u]) continue;
+                visited[u] = true;
+                inv_dfs_scc(g_r, u, visited, curr_scc);
+                res.emplace_back(curr_scc);
+                curr_scc.clear();
+            }
+
+            return res;
+        }
 
 
     template<typename T>
