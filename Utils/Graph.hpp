@@ -189,60 +189,103 @@ namespace Graph {
         return res;
     }
 
-        template<typename T>
-        void dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::stack<int> &finishing) {
+    template<typename T>
+    void dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::stack<int> &finishing) {
+        if (visited[u]) return;
+        visited[u] = true;
+
+        for (const auto &e: g[u]) {
+            dfs_scc(g, e.first, visited, finishing);
+        }
+        finishing.emplace(u);
+    }
+
+    template<typename T>
+    void inv_dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::set<int> &curr_scc) {
+        for (const auto &e: g[u]) {
+            if (visited[e.first]) continue;
+            visited[e.first] = true;
+            inv_dfs_scc(g, e.first, visited, curr_scc);
+        }
+        curr_scc.emplace(u); // may be modified when just the index of each vertex is needed.
+    }
+
+    /**
+     * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
+     *
+     * @tparam T ValueType
+     * @param g The given graph
+     * @param g_r The inverse of the given graph
+     * @return std::set of SCCs
+     */
+    template<typename T>
+    vector<set<int>> scc(const graph<T> &g, const graph<T> &g_r) {
+        std::vector<bool> visited(g.size(), false);
+        std::stack<int> finishing_time;
+        for (int i = 1; i < g.size(); i++) {
+            if (visited[i]) continue;
+            dfs_scc(g, i, visited, finishing_time);
+        }
+
+        visited.assign(g.size(), false);
+        vector<set<int>> res;
+        std::set<int> curr_scc;
+        while (!finishing_time.empty()) {
+            int u = finishing_time.top();
+            finishing_time.pop();
+            if (visited[u]) continue;
+            visited[u] = true;
+            inv_dfs_scc(g_r, u, visited, curr_scc);
+            res.emplace_back(curr_scc);
+            curr_scc.clear();
+        }
+
+        return res;
+    }
+
+    template<typename T>
+    vector<int> scc(const graph<T> &g, const graph<T> &g_r) {
+        std::vector<bool> visited(g.size(), false);
+        std::stack<int> finishing_time;
+
+        std::function<void(int)> dfs_scc = [&](int u) {
             if (visited[u]) return;
             visited[u] = true;
 
-            for (const auto &e: g[u]) {
-                dfs_scc(g, e.first, visited, finishing);
+            for (const auto &[v, w]: g[u]) {
+                dfs_scc(v);
             }
-            finishing.emplace(u);
+            finishing_time.emplace(u);
+        };
+
+        for (int i = 0; i < g.size(); i++) {
+            if (visited[i]) continue;
+            dfs_scc(i);
         }
 
-        template<typename T>
-        void inv_dfs_scc(const graph<T> &g, int u, std::vector<bool> &visited, std::set<int> &curr_scc) {
-            for (const auto &e: g[u]) {
-                if (visited[e.first]) continue;
-                visited[e.first] = true;
-                inv_dfs_scc(g, e.first, visited, curr_scc);
+        visited.assign(g.size(), false);
+        vector<int> res(g.size(), -1);
+
+        std::function<void(int, int)> inv_dfs_scc = [&](int u, int idx) {
+            for (const auto &[v, w]: g_r[u]) {
+                if (visited[v]) continue;
+                visited[v] = true;
+                inv_dfs_scc(v, idx);
             }
-            curr_scc.emplace(u); // may be modified when just the index of each vertex is needed.
+            res[u] = idx;
+        };
+
+        int idx = 0;
+        while (!finishing_time.empty()) {
+            int u = finishing_time.top();
+            finishing_time.pop();
+            if (visited[u]) continue;
+            visited[u] = true;
+            inv_dfs_scc(u, idx++);
         }
 
-/**
- * Algorithm to find the <b>SCC(Strongly Connected Components)</b>
- *
- * @tparam T ValueType
- * @param g The given graph
- * @param g_r The inverse of the given graph
- * @return std::set of SCCs
- */
-        template<typename T>
-        vector<set<int>> scc(const graph<T> &g, const graph<T> &g_r) {
-            std::vector<bool> visited(g.size(), false);
-            std::stack<int> finishing_time;
-            for (int i = 1; i < g.size(); i++) {
-                if (visited[i]) continue;
-                dfs_scc(g, i, visited, finishing_time);
-            }
-
-            visited.assign(g.size(), false);
-            vector<set<int>> res;
-            std::set<int> curr_scc;
-            while (!finishing_time.empty()) {
-                int u = finishing_time.top();
-                finishing_time.pop();
-                if (visited[u]) continue;
-                visited[u] = true;
-                inv_dfs_scc(g_r, u, visited, curr_scc);
-                res.emplace_back(curr_scc);
-                curr_scc.clear();
-            }
-
-            return res;
-        }
-
+        return res;
+    }
 
     template<typename T>
     int dfs_articulation_points(const graph<T>& g, int u, bool is_root, vector<int>& mark, int& cnt, set<int>& res) {
