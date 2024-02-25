@@ -287,6 +287,47 @@ namespace Graph {
 
         return res;
     }
-    #pragma ide diagnostic pop
+
+    template<typename T>
+    int dfs_articulation_bridges(const graph<T>& g, int u, int p, vector<int>& mark, int& cnt, set<pair<int,int>>& res) {
+        mark[u] = cnt++;
+        int ret = mark[u];
+
+        for (const auto &[v, w]: g[u]) {
+            if (v == p) continue;
+            if (mark[v] == 0) {
+                int lowest = dfs_articulation_bridges(g, v, u, mark, cnt, res);
+                if (lowest > mark[u]) {
+                    res.emplace(min(u, v), max(u, v));
+                }
+                ret = min(ret, lowest);
+            } else {
+                ret = min(ret, mark[v]);
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     * Find articulation bridges(a.k.a. cut-edges) of the given graph.
+     * @param g The graph (assumed to be 1-indexed)
+     * @return std::set of the articulation bridges
+     */
+    template<typename T>
+    std::set<pair<int,int>> articulation_bridges(const graph<T>& g) {
+        int n = (int) g.size() - 1;
+        std::set<pair<int, int>> res;
+        vector<int> mark(n + 1, 0);
+        int cnt = 1;
+
+        for (int i = 1; i <= n; i++) {
+            if (mark[i] == 0) dfs_articulation_bridges(g, i, 0, mark, cnt, res);
+        }
+
+        return res;
+    }
+
+#pragma ide diagnostic pop
 } // namespace Graph
 } // namespace Utils
