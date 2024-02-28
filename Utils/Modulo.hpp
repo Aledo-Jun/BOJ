@@ -467,6 +467,23 @@ namespace Modulo {
 
     using modint = DynamicModInt<-1>;
 
+
+    inline void fasterLLDivMod(unsigned long long x, unsigned y, unsigned &out_d, unsigned &out_m) {
+        unsigned xh = (unsigned)(x >> 32), xl = (unsigned)x, d, m;
+        asm(
+                "divl %4; \n\t"
+                : "=a" (d), "=d" (m)
+                : "d" (xh), "a" (xl), "r" (y)
+            );
+        out_d = d; out_m = m;
+    }
+    //x < 2^32 * MOD !
+    inline unsigned Mod(unsigned long long x, unsigned y){
+        unsigned dummy, r;
+        fasterLLDivMod(x, y, dummy, r);
+        return r;
+    }
+
 } // namespace Modulo
 
 } // namespace Utils
