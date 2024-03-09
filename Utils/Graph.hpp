@@ -371,6 +371,52 @@ namespace Graph {
         return res;
     }
 
+    /**
+     * Bipartite Matching algorithm
+     * @tparam T Value type
+     * @var pairU
+     * @var pairV
+     */
+    template<typename T>
+    class Bipartite {
+        int sz;
+        graph<T> _g;
+        std::vector<int> pairU, pairV;
+
+    private:
+        std::vector<bool> visited;
+
+        bool dfs(int u) {
+            visited[u] = true;
+            for (const auto &[v, w]: _g[u]) {
+                if (pairV[v] == -1 || !visited[pairV[v]] && dfs(pairV[v])) {
+                    pairU[u] = v;
+                    pairV[v] = u;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+    public:
+        Bipartite(const graph<T> &g) : _g(g), sz((int) g.size()) {}
+
+        /**
+         * Finds the largest matching
+         * @return Maximum number of matched nodes
+         */
+        int maxBPM() {
+            int result = 0;
+
+            for (int u = 0; u < sz; u++) {
+                std::fill(visited.begin(), visited.end(), false);
+                result += dfs(u);
+            }
+
+            return result;
+        }
+    };
+
 #pragma ide diagnostic pop
 } // namespace Graph
 } // namespace Utils
