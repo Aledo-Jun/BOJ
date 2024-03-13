@@ -417,6 +417,148 @@ namespace Graph {
         }
     };
 
+    /**
+     * Dinic's algorithm to find the maximum flow of the given network graph.
+     */
+    class Dinic {
+    private:
+        struct Edge {
+            int u, v, cap, rev;
+            Edge(int u, int v, int cap, int rev) : u(u), v(v), cap(cap), rev(rev) {}
+        };
+
+        int n;
+        vector<vector<Edge>> g;
+        vector<int> level, ptr;
+
+        bool bfs(int s, int t) {
+            level.assign(n, -1);
+            level[s] = 0;
+            queue<int> q;
+            q.push(s);
+
+            while (!q.empty()) {
+                int u = q.front();
+                q.pop();
+
+                for (const Edge &e: g[u]) {
+                    if (e.cap > 0 && level[e.v] == -1) {
+                        level[e.v] = level[u] + 1;
+                        q.push(e.v);
+                    }
+                }
+            }
+
+            return level[t] != -1;
+        }
+
+        int dfs(int u, int t, int flow) {
+            if (u == t)
+                return flow;
+
+            for (; ptr[u] < g[u].size(); ptr[u]++) {
+                Edge &e = g[u][ptr[u]];
+
+                if (e.cap > 0 && level[e.v] == level[u] + 1) {
+                    int bottleneck = dfs(e.v, t, min(flow, e.cap));
+
+                    if (bottleneck > 0) {
+                        e.cap -= bottleneck;
+                        g[e.v][e.rev].cap += bottleneck;
+                        return bottleneck;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+    public:
+        explicit Dinic(int n) : n(n), g(n), level(n), ptr(n) {}
+
+        void addEdge(int u, int v, int cap) {
+            g[u].emplace_back(u, v, cap, g[v].size());
+            g[v].emplace_back(v, u, 0, g[u].size() - 1);
+        }
+
+        int maxFlow(int s, int t) {
+            int flow = 0;
+
+            while (bfs(s, t)) {
+                ptr.assign(n, 0);
+                flow += dfs(s, t, INT_MAX);
+            }
+
+            return flow;
+        }
+    };
+
+        class MinCostMaxFlow {
+            const int INF = 1e9;
+            struct Edge {
+                int u, v, cap, rev, cost;
+                Edge(int u, int v, int cap, int rev, int cost) : u(u), v(v), cap(cap), rev(rev), cost(cost) {}
+            };
+        private:
+            int n;
+            vector<vector<Edge>> g;
+            vector<int> dist;
+            vector<Edge*> prev;
+            bool bellmanFord(int s, int t) {
+                dist.assign(n, INF);
+                queue<int> q;
+                vector<bool> is_in_q(n, false);
+
+                dist[s] = 0;
+                q.emplace(s);
+                is_in_q[s] = true;
+
+                while (!q.empty()) {
+                    int u = q.front();
+                    q.pop();
+                    is_in_q[u] = false;
+                    for (auto &e: g[u]) {
+                        if (e.cap > 0 && dist[e.v] > dist[u] + e.cost) {
+                            dist[e.v] = dist[u] + e.cost;
+                            prev[e.v] = &e;
+                            if (!is_in_q[e.v]) {
+                                is_in_q[e.v] = true;
+                                q.emplace(e.v);
+                            }
+                        }
+                    }
+                }
+                return dist[t] != INF;
+            }
+
+        public:
+            explicit MinCostMaxFlow(int n) : n(n), g(n), dist(n), prev(n) {}
+            void addEdge(int u, int v, int cap, int cost) {
+                g[u].emplace_back(u, v, cap, g[v].size(), cost);
+                g[v].emplace_back(v, u, 0, g[u].size() - 1, -cost);
+            }
+            pair<int, int> minCostMaxFlow(int s, int t) {
+                int flow = 0, cost = 0;
+                while (bellmanFord(s, t)) {
+                    // find minimum flow
+                    int curr = INF;
+                    for (auto e = prev[t]; e; e = prev[e->u]){
+                        curr = min(curr, e->cap);
+                    }
+                    flow += curr;
+
+                    for (auto e = prev[t]; e; e = prev[e->u]){
+                        cost += curr * e->cost;
+
+                        // reverse direction
+                        e->cap -= curr;
+                        g[e->v][e->rev].cap += curr;
+                    }
+                }
+                return {flow, cost};
+            }
+        };
+
 #pragma ide diagnostic pop
 } // namespace Graph
 } // namespace Utils
