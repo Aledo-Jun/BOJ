@@ -9,9 +9,9 @@ namespace Utils
 namespace String
 {
     // Trie data structure for checking the existence of the prefix
-    // Note : the insertion process should be in sorted order
     struct TrieNode {
-        TrieNode *children[10]{};
+        TrieNode *children[10]{}; // may adjust size
+        int cnt; // how many elements are in this Trie that include *this
         bool isEnd;
 
         TrieNode() {
@@ -19,36 +19,44 @@ namespace String
                 i = nullptr;
             isEnd = false;
         }
+
+        void insert(const string& word) {
+            TrieNode *current = this;
+
+            for (char c: word) {
+                int index = c - '0';
+
+                if (current->children[index] == nullptr)
+                    current->children[index] = new TrieNode();
+
+                current = current->children[index];
+                current->cnt++;
+            }
+        }
+
+        void erase(const string& word) {
+            TrieNode *current = this;
+
+            for (char c: word) {
+                int index = c - '0';
+                current = current->children[index];
+                current->cnt--;
+            }
+        }
+
+        int query(const string& word) {
+            int n = (int) word.size();
+            TrieNode *current = this;
+
+            int result = 0;
+            for (int i = 0; i < n; i++) {
+                int index = word[i] - '0';
+                // Do something
+            }
+            return result;
+        }
     };
 
-    bool insertWord(TrieNode *root, const string &word) {
-        TrieNode *current = root;
-
-        for (char c: word) {
-            int index = c - '0';
-
-            if (current->children[index] == nullptr)
-                current->children[index] = new TrieNode();
-
-            current = current->children[index];
-
-            if (current->isEnd)
-                return true; // Prefix found, return true
-        }
-        current->isEnd = true;
-
-        return false;
-    }
-
-    bool can_be_palindrome(const string &s, int start, int end) {
-        while (start < end) {
-            if (s[start] != s[end])
-                return false;
-            start++;
-            end--;
-        }
-        return true;
-    }
 
     // Find pattern's partial matches(failure table) for KMP algorithm
     vector<int> getPartialMatch(const string &P) {
