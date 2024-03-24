@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <queue>
+#include <functional>
 using ull = unsigned long long;
 
 using namespace std;
@@ -59,90 +60,111 @@ namespace String
         }
     };
 
- /**
- * Aho-Corasick algorithm for string-searching in linear time
- * @tparam size size of the input character set(default is english alphabet, 26)
- * @tparam base the starting character of the set above(default is 'a')
- */
-    template<int size = 26, char base = 'a'>
-    class Aho_Corasick {
-    private:
-        struct TrieNode {
-            std::unique_ptr<TrieNode> children[size]{};
-            TrieNode* fail;
-            bool isEnd;
+     /**
+     * Aho-Corasick algorithm for string-searching in linear time
+     * @tparam IndexSize size of the input character set(default is english alphabet, 26)
+     */
+     template<int IndexSize = 26>
+     class Aho_Corasick {
+         using Index_Fn = function<int(unsigned char)>;
+     private:
+         struct TrieNode {
+             TrieNode* children[IndexSize];
+             TrieNode* fail;
+             int isEndOf;
 
-            TrieNode() : isEnd(false), fail(nullptr) {
-                fill(children, children + size, nullptr);
-            }
+             TrieNode() : isEndOf(-1), fail(nullptr) {
+                 fill(children, children + IndexSize, nullptr);
+             }
+             ~TrieNode() {
+                 for (auto child : children) delete child;
+             }
 
-            void insert(const string& word) {
-                TrieNode* current = this;
-                for (char c: word) {
-                    int index = c - base;
-                    if (current->children[index] == nullptr)
-                        current->children[index] = make_unique<TrieNode>();
+             void insert(const string& word, int& sz, const Index_Fn& index_of) {
+                 TrieNode* current = this;
+                 for (const auto c: word) {
+                     int index = index_of(c);
+                     if (current->children[index] == nullptr)
+                         current->children[index] = new TrieNode;
 
-                    current = current->children[index].get();
-                }
-                current->isEnd = true;
-            }
-        };
+                     current = current->children[index];
+                 }
+                 current->isEndOf = sz++;
+             }
+         };
 
-        TrieNode* root;
-        bool is_initialized = false;
+         TrieNode* _root_;
+         bool is_initialized = false;
+         int _size_;
+         Index_Fn _index_fn_;
 
-    public:
-        void init() {
-            queue<TrieNode*> q;
-            q.emplace(root);
-            root->fail = root;
+     public:
+         explicit Aho_Corasick(Index_Fn index_fn) : _root_(new TrieNode), _size_(0), _index_fn_(std::move(index_fn)) {}
 
-            while (!q.empty()) {
-                auto current = q.front();
-                q.pop();
-                for (int i = 0; i < size; i++) {
-                    auto next = current->children[i].get();
-                    if (next == nullptr) continue;
+         ~Aho_Corasick() { delete _root_; }
 
-                    if (current == root) next->fail = root;
-                    else {
-                        auto fail_node = current->fail;
-                        while (fail_node != root && fail_node->children[i] == nullptr)
-                            fail_node = fail_node->fail;
-                        if (fail_node->children[i] != nullptr) fail_node = fail_node->children[i].get();
+         void init() {
+             queue<TrieNode*> q;
+             q.emplace(_root_);
+             _root_->fail = _root_;
 
-                        next->fail = fail_node;
-                    }
-                    if (next->fail->isEnd) next->isEnd = true;
+             while (!q.empty()) {
+                 auto current = q.front();
+                 q.pop();
+                 for (int i = 0; i < IndexSize; i++) {
+                     auto next = current->children[i];
+                     if (next == nullptr) continue;
 
-                    q.emplace(next);
-                }
-            }
-        }
+                     if (current == _root_) next->fail = _root_;
+                     else {
+                         auto fail_node = current->fail;
+                         while (fail_node != _root_ && fail_node->children[i] == nullptr)
+                             fail_node = fail_node->fail;
+                         if (fail_node->children[i] != nullptr) fail_node = fail_node->children[i];
 
-        void insert(const string& word) {
-            root->insert(word);
-        }
+                         next->fail = fail_node;
+                     }
+                     if (next->fail->isEndOf != -1)
+                         next->isEndOf = next->fail->isEndOf;
 
-        Aho_Corasick() : root(new TrieNode) {}
+                     q.emplace(next);
+                 }
+             }
+         }
 
-        bool find(const string& word) {
-            if (!is_initialized) {
-                init();
-                is_initialized = true;
-            }
-            auto current = root;
-            for (const auto& c: word) {
-                int index = c - base;
-                while (current != root && current->children[index] == nullptr)
-                    current = current->fail;
-                if (current->children[index] != nullptr) current = current->children[index].get();
-                if (current->isEnd) return true;
-            }
-            return false;
-        }
-    };
+         void insert(const string& word) {
+             _root_->insert(word, _size_, _index_fn_);
+         }
+
+         int count(const string& word) {
+             if (!is_initialized) {
+                 init();
+                 is_initialized = true;
+             }
+
+             int res = 0;
+             auto current = _root_;
+             for (const auto c : word) {
+                 int index = _index_fn_(c);
+                 while (current != _root_ && current->children[index] == nullptr)
+                     current = current->fail;
+                 if (current->children[index] != nullptr)
+                     current = current->children[index];
+
+                 if (current->isEndOf != -1) {
+                     res++;
+                 }
+             }
+             return res;
+         }
+
+         void clear() {
+             delete _root_;
+             _root_ = new TrieNode;
+             is_initialized = false;
+             _size_ = 0;
+         }
+     };
 
     // Find pattern's partial matches(failure table) for KMP algorithm
     vector<int> getPartialMatch(const string &P) {
