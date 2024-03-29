@@ -10,6 +10,7 @@
 #define BOJ_FFT_HPP
 #include <complex>
 #include <vector>
+#include <algorithm>
 #include "Modulo.hpp"
 
 namespace Utils
@@ -308,220 +309,191 @@ namespace NTT
 #else
 
 // NTT using ModInt in Modulo.hpp
-namespace NTT
-{
+namespace NTT {
     using namespace Math;
     using namespace Modulo;
 
     template<typename mint, is_modint_t<mint> * = nullptr,
             unsigned ROOT = primitive_root<mint::mod()>,
             unsigned MOD = mint::mod()>
-    void _ntt(std::vector<mint> &_v, bool _is_inv) {
-        int n = (int) _v.size();
-        // bit-reversal
-        for (int i = 1, j = 0; i < n; i++) {
-            int _bit = n >> 1;
-            while (!((j ^= _bit) & _bit)) _bit >>= 1;
-            if (i < j) std::swap(_v[i], _v[j]);
-        }
+    class NTT {
+    private:
+        vector<mint> roots;
 
-        for (int i = 1; i < n; i <<= 1) {
-            mint w = mint(ROOT).pow(MOD / i >> 1);
-            if (_is_inv) w = w.inv();
-            for (int j = 0; j < n; j += i << 1) {
-                mint z = 1;
-                for (int k = 0; k < i; k++) {
-                    mint tmp = _v[i + j + k] * z;
-                    _v[i + j + k] = _v[j + k] - tmp;
-                    _v[j + k] += tmp;
-
-                    z *= w;
+        void _precompute_roots(int n) {
+            if (roots.empty()) roots = {1, 1};
+            for (int k = (int) roots.size(); k < n; k <<= 1) {
+                roots.resize(n, 1);
+                mint w = mint(ROOT).pow((MOD - 1) / (k << 1));
+                for (int i = k; i < k << 1; i++) {
+                    roots[i] = i & 1 ? roots[i >> 1] * w : roots[i >> 1];
                 }
             }
         }
-        if (_is_inv) {
-            mint n_inv = mint(n).inv();
-            for (auto &z: _v) z *= n_inv;
-        }
-    }
 
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void ntt(std::vector<mint> &v) {
-        _ntt(v, false);
-    }
+        void _ntt(std::vector<mint> &_v, bool _is_inv) {
+            int n = (int) _v.size();
+            // bit-reversal
+            for (int i = 1, j = 0; i < n; i++) {
+                int _bit = n >> 1;
+                while (!((j ^= _bit) & _bit)) _bit >>= 1;
+                if (i < j) std::swap(_v[i], _v[j]);
+            }
 
-    template<int MOD = 998244353,
-            typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
-    auto ntt(std::vector<T> &v) {
-        using mint = ModInt<MOD>;
-        vector<mint> _v(v.begin(), v.end());
-        _ntt(_v, false);
-        return _v;
-    }
-
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void inv_ntt(std::vector<mint> &v) {
-        _ntt(v, true);
-    }
-
-    template<int MOD = 998244353,
-            typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
-    auto inv_ntt(std::vector<T> &v) {
-        using mint = ModInt<MOD>;
-        vector<mint> _v(v.begin(), v.end());
-        _ntt(_v, true);
-        return _v;
-    }
-
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void _naive_convolution(std::vector<mint> &_a,
-                            const std::vector<mint> &_b) {
-        int n = (int) _a.size();
-        int m = (int) _b.size();
-        std::vector<mint> res(n + m - 1);
-        if (n < m) {
-            for (int j = 0; j < m; j++) {
-                for (int i = 0; i < n; i++) {
-                    res[i + j] += _a[i] * _b[j];
+            _precompute_roots(n);
+            for (int i = 1; i < n; i <<= 1) {
+                for (int j = 0; j < n; j += i << 1) {
+                    for (int k = 0; k < i; k++) {
+                        mint tmp = _v[i + j + k] * roots[i + k];
+                        _v[i + j + k] = _v[j + k] - tmp;
+                        _v[j + k] += tmp;
+                    }
                 }
             }
-        } else {
-            for (int i = 0; i < n; i++) {
+            if (_is_inv) {
+                std::reverse(_v.begin() + 1, _v.end());
+                mint n_inv = mint(n).inv();
+                for (auto &z: _v) z *= n_inv;
+            }
+        }
+
+    public:
+        void ntt(std::vector<mint> &v) {
+            _ntt(v, false);
+        }
+
+        template<typename T,
+                std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+        auto ntt(std::vector<T> &v) {
+            vector<mint> _v(v.begin(), v.end());
+            _ntt(_v, false);
+            return _v;
+        }
+
+        void inv_ntt(std::vector<mint> &v) {
+            _ntt(v, true);
+        }
+
+        template<typename T,
+                std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+        auto inv_ntt(std::vector<T> &v) {
+            vector<mint> _v(v.begin(), v.end());
+            _ntt(_v, true);
+            return _v;
+        }
+
+    private:
+        void _naive_convolution(std::vector<mint> &_a,
+                                const std::vector<mint> &_b) {
+            int n = (int) _a.size();
+            int m = (int) _b.size();
+            std::vector<mint> res(n + m - 1);
+            if (n < m) {
                 for (int j = 0; j < m; j++) {
-                    res[i + j] += _a[i] * _b[j];
+                    for (int i = 0; i < n; i++) {
+                        res[i + j] += _a[i] * _b[j];
+                    }
+                }
+            } else {
+                for (int i = 0; i < n; i++) {
+                    for (int j = 0; j < m; j++) {
+                        res[i + j] += _a[i] * _b[j];
+                    }
                 }
             }
+            _a = res;
         }
-        _a = res;
-    }
 
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void _ntt_convolution(std::vector<mint> &_a,
+        void _ntt_convolution(std::vector<mint> &_a,
+                              std::vector<mint> &_b) {
+            int n = (int) _a.size();
+            int m = (int) _b.size();
+            int len = 1;
+            while (len < (n + m)) len <<= 1;
+
+            _a.resize(len);
+            _ntt(_a, false);
+            _b.resize(len);
+            _ntt(_b, false);
+
+            for (int i = 0; i < len; i++)
+                _a[i] *= _b[i];
+
+            _ntt(_a, true);
+        }
+
+        void _convolution(std::vector<mint> &&_a,
+                          std::vector<mint> &&_b) {
+            int n = (int) _a.size();
+            int m = (int) _b.size();
+            if (n == 0 || m == 0) return;
+            if (std::min(n, m) <= 50) return _naive_convolution(_a, _b);
+            return _ntt_convolution(_a, _b);
+        }
+
+        void _convolution(std::vector<mint> &_a,
                           std::vector<mint> &_b) {
-        int n = (int) _a.size();
-        int m = (int) _b.size();
-        int len = 1;
-        while (len < (n + m)) len <<= 1;
-
-        _a.resize(len);
-        _ntt(_a, false);
-        _b.resize(len);
-        _ntt(_b, false);
-
-        for (int i = 0; i < len; i++)
-            _a[i] *= _b[i];
-
-        _ntt(_a, true);
-    }
-
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void _convolution(std::vector<mint> &&_a,
-                      std::vector<mint> &&_b) {
-        int n = (int) _a.size();
-        int m = (int) _b.size();
-        if (n == 0 || m == 0) return;
-        if (std::min(n, m) <= 60) return _naive_convolution(_a, _b);
-        return _ntt_convolution(_a, _b);
-    }
-
-    template<typename mint, is_modint_t<mint> * = nullptr>
-    void _convolution(std::vector<mint> &_a,
-                      std::vector<mint> &_b) {
-        int n = (int) _a.size();
-        int m = (int) _b.size();
-        if (n == 0 || m == 0) return;
-        if (std::min(n, m) <= 60) return _naive_convolution(_a, _b);
-        return _ntt_convolution(_a, _b);
-    }
-
-    template<int MOD = 998244353,
-            typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
-    std::vector<T> convolution(const std::vector<T> &a,
-                               const std::vector<T> &b) {
-        int n = (int) a.size();
-        int m = (int) b.size();
-        if (n == 0 || m == 0) return {};
-
-        using mint = ModInt<MOD>;
-
-        std::vector<mint> _a(a.begin(), a.end()), _b(b.begin(), b.end());
-        _convolution(std::move(_a), std::move(_b));
-
-        std::vector<T> res(n + m - 1);
-        for (int i = 0; i < n + m - 1; i++)
-            res[i] = _a[i].value();
-
-        return res;
-    }
-
-    // TODO: search for Chinese Remainder Theorem(CRT)
-    std::vector<long long> convolution_ll(const std::vector<long long>& a,
-                                          const std::vector<long long>& b) {
-        int n = int(a.size()), m = int(b.size());
-        if (!n || !m) return {};
-
-        static constexpr unsigned long long MOD1 = 754974721;  // 2^24
-        static constexpr unsigned long long MOD2 = 167772161;  // 2^25
-        static constexpr unsigned long long MOD3 = 469762049;  // 2^26
-        static constexpr unsigned long long M2M3 = MOD2 * MOD3;
-        static constexpr unsigned long long M1M3 = MOD1 * MOD3;
-        static constexpr unsigned long long M1M2 = MOD1 * MOD2;
-        static constexpr unsigned long long M1M2M3 = MOD1 * MOD2 * MOD3;
-
-        static constexpr unsigned long long i1 =
-                inv_gcd(MOD2 * MOD3, MOD1).second;
-        static constexpr unsigned long long i2 =
-                inv_gcd(MOD1 * MOD3, MOD2).second;
-        static constexpr unsigned long long i3 =
-                inv_gcd(MOD1 * MOD2, MOD3).second;
-
-        static constexpr int MAX_AB_BIT = 24;
-        static_assert(MOD1 % (1ull << MAX_AB_BIT) == 1, "MOD1 isn't enough to support an array length of 2^24.");
-        static_assert(MOD2 % (1ull << MAX_AB_BIT) == 1, "MOD2 isn't enough to support an array length of 2^24.");
-        static_assert(MOD3 % (1ull << MAX_AB_BIT) == 1, "MOD3 isn't enough to support an array length of 2^24.");
-        assert(n + m - 1 <= (1 << MAX_AB_BIT));
-
-        auto c1 = convolution<MOD1>(a, b);
-        auto c2 = convolution<MOD2>(a, b);
-        auto c3 = convolution<MOD3>(a, b);
-
-        std::vector<long long> c(n + m - 1);
-        for (int i = 0; i < n + m - 1; i++) {
-            unsigned long long x = 0;
-            x += (c1[i] * i1) % MOD1 * M2M3;
-            x += (c2[i] * i2) % MOD2 * M1M3;
-            x += (c3[i] * i3) % MOD3 * M1M2;
-            // B = 2^63, -B <= x, r(real value) < B
-            // (x, x - M, x - 2M, or x - 3M) = r (mod 2B)
-            // r = c1[i] (mod MOD1)
-            // focus on MOD1
-            // r = x, x - M', x - 2M', x - 3M' (M' = M % 2^64) (mod 2B)
-            // r = x,
-            //     x - M' + (0 or 2B),
-            //     x - 2M' + (0, 2B or 4B),
-            //     x - 3M' + (0, 2B, 4B or 6B) (without mod!)
-            // (r - x) = 0, (0)
-            //           - M' + (0 or 2B), (1)
-            //           -2M' + (0 or 2B or 4B), (2)
-            //           -3M' + (0 or 2B or 4B or 6B) (3) (mod MOD1)
-            // we checked that
-            //   ((1) mod MOD1) mod 5 = 2
-            //   ((2) mod MOD1) mod 5 = 3
-            //   ((3) mod MOD1) mod 5 = 4
-            long long diff =
-                    c1[i] - safe_mod((long long)(x), (long long)(MOD1));
-            if (diff < 0) diff += MOD1;
-            static constexpr unsigned long long offset[5] = {
-                    0, 0, M1M2M3, 2 * M1M2M3, 3 * M1M2M3};
-            x -= offset[diff % 5];
-            c[i] = x;
+            int n = (int) _a.size();
+            int m = (int) _b.size();
+            if (n == 0 || m == 0) return;
+            if (std::min(n, m) <= 50) return _naive_convolution(_a, _b);
+            return _ntt_convolution(_a, _b);
         }
 
-        return c;
-    }
+    public:
+        template<typename T,
+                std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+        std::vector<T> convolution(const std::vector<T> &a,
+                                   const std::vector<T> &b) {
+            int n = (int) a.size();
+            int m = (int) b.size();
+            if (n == 0 || m == 0) return {};
+
+            std::vector<mint> _a(a.begin(), a.end()), _b(b.begin(), b.end());
+            _convolution(std::move(_a), std::move(_b));
+
+            std::vector<T> res(n + m - 1);
+            for (int i = 0; i < n + m - 1; i++)
+                res[i] = _a[i].value(); // NOLINT: variable used after it was moved(intended)
+
+            return res;
+        }
+
+        /**
+    * @brief Bostan-Mori Algorithm that finds n-th element of the sequence which is defined recursively as follow:
+    * <p>
+    *      {a_0, a_1, ..., a_k-1} = {a[0], a[1], ... , a[k-1]}, <br>
+    *      {c_1, c_2, ..., c_k} = {c[0], c[1], ... , c[k-1]}, <br>
+    *      a_i = c_1 * a_i-1 + c_2 * a_i-2 + ... + c_k * a_i-k
+    * </p>
+    * @tparam mint ModInt type
+    * @param a Same as def
+    * @param c Same as def
+    * @param n Index of element you want to find
+    * @return Value of n-th element of the sequence
+    */
+        template<typename T>
+        T Bostan_Mori(const std::vector<T> &a, const std::vector<T> &c, long long n, long long mod) {
+            int k = (int) a.size();
+
+            std::vector<T> C(k + 1, 1);
+            for (int i = 1; i <= k; i++) C[i] = mod - c[i - 1];
+
+            auto P = this->convolution(a, C);
+            P.resize(k);
+            for (auto &e: P) e %= mod;
+
+            for (; n; n >>= 1) {
+                auto Q = C;
+                for (int i = 1; i <= k; i += 2) Q[i] = mod - C[i];
+                auto U = this->convolution(P, Q);
+                auto V = this->convolution(C, Q);
+                for (int i = 0; i < k; i++) P[i] = U[i * 2 + (n & 1)] % mod;
+                for (int i = 0; i <= k; i++) C[i] = V[i * 2] % mod;
+            }
+            return (P[0] % mod) * Utils::Math::pow_mod_constexpr(C[0] % mod, mod - 2, mod);
+        }
+    }; // class NTT
 } // namespace NTT using ModInt
 #endif
 
