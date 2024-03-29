@@ -201,5 +201,75 @@ namespace String
         return result;
     }
 
+    /// @Ref <a href="https://gist.github.com/koosaga/44532e5dec947132ee55da0458255e05">koosaga</a>
+    class SuffixArray {
+    private:
+        std::string str;
+        int n;
+
+        std::vector<int> ord, nord;
+        std::vector<int> cnt, aux; // for counting sort
+        std::vector<int> sfx, rev, lcp;
+
+    public:
+        explicit SuffixArray(const std::string& s) : str(s), n((int)s.size()),
+                                                     ord(n + 1), nord(n + 1),
+                                                     cnt(std::max(256, n + 1)), aux(n),
+                                                     sfx(n), rev(n), lcp(n)
+        {
+            int p = 1;
+            std::fill(ord.begin(), ord.end(), 0);
+            for (int i = 0; i < n; i++) {
+                sfx[i] = i;
+                ord[i] = (unsigned char)str[i];
+            }
+
+            int pnt = 1;
+            while (true) {
+                std::fill(cnt.begin(), cnt.end(), 0);
+                for (int i = 0; i < n; i++)
+                    cnt[ord[std::min(i + p, n)]]++;
+                for (int i = 1; i <= n || i <= 255; i++)
+                    cnt[i] += cnt[i - 1];
+                for (int i = n - 1; i >= 0; i--)
+                    aux[--cnt[ord[std::min(i + p, n)]]] = i;
+
+                std::fill(cnt.begin(), cnt.end(), 0);
+                for (int i = 0; i < n; i++)
+                    cnt[ord[i]]++;
+                for (int i = 1; i <= n || i <= 255; i++)
+                    cnt[i] += cnt[i - 1];
+                for (int i = n - 1; i >= 0; i--)
+                    sfx[--cnt[ord[aux[i]]]] = aux[i];
+
+                if (pnt == n) break;
+                else pnt = 1;
+
+                nord[sfx[0]] = 1;
+                for (int i = 1; i < n; i++){
+                    if (ord[sfx[i - 1]] != ord[sfx[i]] || ord[sfx[i - 1] + p] != ord[sfx[i] + p])
+                        pnt++;
+                    nord[sfx[i]] = pnt;
+                }
+                ord = nord;
+                p *= 2;
+            }
+            for (int i = 0; i < n; i++) rev[sfx[i]] = i;
+
+            // LCP
+            int h = 0;
+            for (int i = 0; i < n; i++) {
+                if (rev[i]) {
+                    int prev = sfx[rev[i] - 1];
+                    while (str[prev + h] == str[i + h]) h++;
+                    lcp[rev[i]] = h;
+                }
+                h = std::max(h - 1, 0);
+            }
+        }
+
+        int operator[](int i) { return sfx[i]; }
+        std::vector<int> get_lcp() { return lcp; }
+    };
 } // namespace String
 } // namespace Utils
