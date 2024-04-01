@@ -203,7 +203,7 @@ namespace String
         return result;
     }
 
-    /// @Ref <a href="https://gist.github.com/koosaga/44532e5dec947132ee55da0458255e05">koosaga</a>
+    /// @Reference <a href="https://gist.github.com/koosaga/44532e5dec947132ee55da0458255e05">koosaga</a>
     class SuffixArray {
     private:
         std::string str;
@@ -445,6 +445,67 @@ namespace String
             lcp_initialized = true;
             return lcp;
         }
+    };
+
+    /**
+     * @brief Suffix Automaton
+     * @tparam IndexSize Size of the char set used for the string
+     * @tparam MAX_N the maximum length of the string
+     * @Reference <a href="https://github.com/koosaga/olympiad/blob/master/Library/codes/string/suffix_automaton.cpp">koosaga</a>
+     */
+    template<int IndexSize = 26, int MAX_N = 1'000'000>
+    class SuffixAutomaton {
+        struct node {
+            int children[IndexSize];
+            int suffix;
+            int len;
+
+            node() : suffix(0), len(0) {
+                std::fill_n(children, IndexSize, -1);
+            }
+            node(int len, int suffix) : suffix(suffix), len(len) {
+                std::fill_n(children, IndexSize, -1);
+            }
+        };
+
+    public:
+        std::vector<node> automaton;
+        int total;
+
+        SuffixAutomaton() : total(0) {
+            automaton.reserve(MAX_N * 2);
+            automaton.emplace_back(node(0, -1));
+        }
+
+        void append(int c) {
+            assert(0 <= c && c <= IndexSize);
+            auto curr = total;
+            automaton.emplace_back(node(automaton[curr].len + 1, 0));
+            total = automaton.size() - 1;
+            while (curr != -1 && automaton[curr].children[c] == -1) {
+                automaton[curr].children[c] = total;
+                curr = automaton[curr].suffix;
+            }
+            if (curr != -1) {
+                auto prv = automaton[curr].children[c];
+                auto upd = automaton[curr].children[c];
+                if (automaton[curr].len + 1 < automaton[prv].len) {
+                    upd = (int)automaton.size();
+                    auto new_node = automaton[prv];
+                    new_node.len = automaton[curr].len + 1;
+                    automaton.emplace_back(new_node);
+                    automaton[prv].suffix = upd;
+                    while (curr != -1 && automaton[curr].children[c] == prv){
+                        automaton[curr].children[c] = upd;
+                        curr = automaton[curr].suffix;
+                    }
+                }
+                automaton[total].suffix = upd;
+            }
+        }
+
+        [[nodiscard]] std::size_t size() const { return automaton.size(); }
+        node& operator[](int i) { return automaton[i]; }
     };
 } // namespace String
 } // namespace Utils
