@@ -2,6 +2,8 @@
 *.in
 *.out
 
+Utils/OutSource
+
 BOJ.cpp
 
 aux.cpp
