@@ -279,7 +279,7 @@ namespace String
             build_lcp();
             return lcp;
         }
-    };
+    }; // class SuffixArray
 
     template<typename String = std::string>
     class SA_IS {
@@ -445,7 +445,7 @@ namespace String
             lcp_initialized = true;
             return lcp;
         }
-    };
+    }; // class SA_IS
 
     /**
      * @brief Suffix Automaton
@@ -506,6 +506,77 @@ namespace String
 
         [[nodiscard]] std::size_t size() const { return automaton.size(); }
         node& operator[](int i) { return automaton[i]; }
-    };
+    }; // class SuffixAutomaton
+
+    template<typename String = std::string, int MAX_STRING_LENGTH = 300'000, int INDEX_SIZE = 26>
+    class PalindromeTree {
+        struct node {
+            int nxt[INDEX_SIZE];
+            int sfxlink;
+            int len;
+            /* modify if needed */
+        };
+
+        String str;
+        int sfx; // max suffix palindrome
+        int total;
+        node tree[MAX_STRING_LENGTH];
+
+        int cnt[MAX_STRING_LENGTH];
+
+        void append(int pos) {
+            int cur = sfx, cur_len;
+            int c = str[pos] - 'a';
+
+            while (true) {
+                cur_len = tree[cur].len;
+                if (pos - 1 - cur_len > -1 && str[pos - 1 - cur_len] == str[pos]) break;
+                cur = tree[cur].sfxlink;
+            }
+            if (tree[cur].nxt[c]) {
+                sfx = tree[cur].nxt[c];
+                cnt[sfx]++;
+                return;
+            }
+
+            sfx = ++total;
+            tree[total].len = tree[cur].len + 2;
+            cnt[sfx]++;
+            tree[cur].nxt[c] = total;
+
+            if (tree[total].len == 1) {
+                tree[total].sfxlink = 2;
+                return;
+            }
+
+            while (true) {
+                cur = tree[cur].sfxlink;
+                cur_len = tree[cur].len;
+                if (pos - 1 - cur_len > -1 && str[pos - 1 - cur_len] == str[pos]) {
+                    tree[total].sfxlink = tree[cur].nxt[c];
+                    break;
+                }
+            }
+        }
+
+    public:
+        PalindromeTree() : sfx(2), total(2) {
+            tree[1].len = -1, tree[1].sfxlink = 1;
+            tree[2].len = 0, tree[2].sfxlink = 1;
+        }
+        void init(const string& s) {
+            str = s;
+            for (int i = 0; i < str.size(); i++) this->append(i);
+        }
+
+        void solve(long long& ans) {
+            /* modify required */
+            for (int i = total; i >= 1; i--) {
+                ans = std::max(ans, 1LL * tree[i].len * cnt[i]);
+                cnt[tree[i].sfxlink] += cnt[i];
+            }
+        }
+    }; // class PalindromeTree
+
 } // namespace String
 } // namespace Utils
