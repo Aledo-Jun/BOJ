@@ -468,6 +468,10 @@ namespace String
             }
         };
 
+        /* modify */
+        int cnt[MAX_N * 2 + 5];
+        int buk[MAX_N + 5], aux[MAX_N * 2 + 5];
+
     public:
         std::vector<node> automaton;
         int total;
@@ -475,6 +479,18 @@ namespace String
         SuffixAutomaton() : total(0) {
             automaton.reserve(MAX_N * 2);
             automaton.emplace_back(node(0, -1));
+        }
+
+        SuffixAutomaton(const string& str) : total(0) {
+            automaton.reserve(MAX_N * 2);
+            automaton.emplace_back(node(0, -1));
+
+            for (const auto& c : str) this->append(c - 'a');
+            for (int i = 1; i <= total; i++) ++buk[automaton[i].len];
+            for (int i = 1; i <= MAX_N; i++) buk[i] += buk[i - 1];
+            for (int i = total; i >= 1; i--) aux[buk[automaton[i].len]--] = i;
+            /* modify */
+            for (int i = total; i >= 1; i--) cnt[automaton[aux[i]].suffix] += cnt[aux[i]];
         }
 
         void append(int c) {
