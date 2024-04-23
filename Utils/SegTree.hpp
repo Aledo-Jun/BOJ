@@ -102,6 +102,69 @@ namespace SegTree
     }; // class SegTree
 
 /**
+ * Segment Tree using iterative method
+ * @tparam T type of elements
+ * @tparam func function object to be called to perform the query
+ * @tparam updating_func function object to be called to update the containing element
+ */
+    template<typename T,
+            typename func = plus<T>,
+            typename updating_func = plus<T>>
+    class SegTree_iter {
+    private:
+        func f;
+        updating_func updating_f;
+        T default_query;
+
+        vector<T> tree, arr;
+        int size, height;
+
+        void init() {
+            for (int i = size / 2 - 1; i > 0; i--)
+                tree[i] = f(tree[i << 1], tree[i << 1 | 1]);
+        }
+
+        void _update(int i, T value) {
+            i += size / 2;
+            tree[i] = updating_f(tree[i], value);
+            for (i >>= 1; i > 0; i >>= 1) tree[i] = f(tree[i << 1], tree[i << 1 | 1]);
+        }
+
+        T _query(int l, int r) {
+            T res1 = default_query, res2 = default_query;
+            for (l += size / 2, r += size / 2; l <= r; l >>= 1, r >>= 1) {
+                if (l & 1) res1 = f(res1, tree[l++]);
+                if (~r & 1) res2 = f(tree[r--], res2);
+                // NOTE: There exists cases that the operation's order must be considered
+            }
+            return f(res1, res2);
+        }
+
+    public:
+        /**
+         * Constructor for a segment tree
+         * @param v Array that the segment tree will be constructed from
+         * @param default_query The result of query that doesn't affect the other query result when performed <i>func</i> with
+         */
+        SegTree_iter(const vector<T> &v, T default_query = 0) : default_query(std::move(default_query)) {
+            arr = v;
+            height = (int) ceil(log2(v.size()));
+            size = (1 << (height + 1));
+            tree.resize(size + 1, default_query);
+            for (int i = 0; i < arr.size(); i++) tree[size / 2 + i] = arr[i];
+            init();
+        }
+
+        void update(int idx, T value) {
+            _update(idx, value);
+        }
+
+        T query(int left, int right) {
+            return _query(left, right);
+        }
+    }; // class SegTree_iter
+
+/**
  * Lazy Segment Tree that can be used to efficiently handle the range queries
  */
     class LazySegTree {
