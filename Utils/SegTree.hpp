@@ -301,14 +301,9 @@ namespace SegTree
             _update(x, val);
         }
 
-        int query(int left, int right, int k) {
-            if (left == right) return left;
-
-            int mid = (left + right) >> 1;
-            int l = _query(left - 1);
-            int m = _query(mid);
-            if (m - l >= k) return query(left, mid, k);
-            else return query(mid + 1, right, k - m + l);
+        int query(int left, int right) {
+            if (left > right) return 0;
+            return _query(right) - _query(left - 1);
         }
     }; // class FenWickTree
 
