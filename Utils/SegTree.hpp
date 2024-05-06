@@ -269,41 +269,53 @@ namespace SegTree
         }
     }; // class LazySegTree
 
+    template<typename T = int,
+            typename Func = plus<T>,
+            typename Inv_Func = minus<T>,
+            T Identity = 0>
     class FenWickTree {
     private:
-        vector<int> tree;
+        Func f;
+        Inv_Func inv_f;
+
+        vector<T> tree;
         int size;
 
-        void _update(int x, int val) {
+        void _update(int x, T val) {
             for (int i = x; i < size; i += (i & -i)) {
-                tree[i] += val;
+                tree[i] = f(tree[i], val);
             }
         }
 
-        int _query(int x) {
-            int res = 0;
+        T _query(int x) {
+            T res = Identity;
             for (int i = x; i > 0; i -= (i & -i)) {
-                res += tree[i];
+                res = f(res, tree[i]);
             }
             return res;
         }
 
     public:
-        FenWickTree(const vector<int> &v) {
-            size = v.size();
-            tree = vector<int>(size);
+        // Empty tree constructor
+        FenWickTree(int size) : size(size) { // NOLINT
+            tree.resize(size, Identity);
+        }
+
+        FenWickTree(const vector<T> &v) {
+            size = (int) v.size();
+            tree.resize(size);
             for (int i = 1; i < size; i++) {
                 _update(i, v[i]);
             }
         }
 
-        void update(int x, int val) {
+        void update(int x, T val) {
             _update(x, val);
         }
 
-        int query(int left, int right) {
-            if (left > right) return 0;
-            return _query(right) - _query(left - 1);
+        T query(int left, int right) {
+            if (left > right) return Identity;
+            return inv_f(_query(right), _query(left - 1));
         }
     }; // class FenWickTree
 
