@@ -399,7 +399,11 @@ namespace Graph {
         }
 
     public:
-        Bipartite(const graph<T> &g) : _g(g), sz((int) g.size()) {}
+        Bipartite(const graph<T> &g) : _g(g), sz((int) g.size()) {
+            visited.resize(sz);
+            pairU.resize(sz, -1);
+            pairV.resize(sz, -1);
+        }
 
         /**
          * Finds the largest matching
