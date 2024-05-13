@@ -94,21 +94,22 @@ namespace Tree
     };
 
 
-    /**
-     * Splay tree implementation
-     * @tparam T Value type
-     */
+/**
+ * Splay tree implementation
+ * @tparam T Value type
+ */
     template<typename T>
     class SplayTree {
         struct Node {
             Node *l, *r, *p;
             T key; // value stored in the node
             int cnt; // # of nodes in the subtree
+            bool flip;
 
             /* Add more variables if needed */
 
-            Node() : l(nullptr), r(nullptr), p(nullptr), key(T(0)), cnt(1) {}
-            Node(T key) : l(nullptr), r(nullptr), p(nullptr), key(key), cnt(1) {
+            Node() : l(nullptr), r(nullptr), p(nullptr), key(T(0)), cnt(1), flip(false) {}
+            explicit Node(T key) : l(nullptr), r(nullptr), p(nullptr), key(key), cnt(1), flip(false) {
                 /* Initialize extra variables */
             }
         } *tree;
@@ -139,20 +140,34 @@ namespace Tree
             update(x);
         }
 
+        void push(Node *x) {
+            if (x->flip) {
+                swap(x->l, x->r);
+                if (x->l) x->l->flip ^= 1;
+                if (x->r) x->r->flip ^= 1;
+                x->flip = false;
+            }
+        }
+
         void splay(Node *x) {
             while (x->p) {
                 Node *p = x->p;
                 Node *g = p->p;
+
+                if (g) push(g);
+                push(p);push(x);
+
                 if (g) rotate((x == p->l) == (p == g->l) ? p : x);
                 rotate(x);
             }
         }
 
     public:
-        explicit SplayTree(const std::vector<T> &v) {
+        template<typename Iter>
+        SplayTree(const Iter& s, const Iter& e) {
             Node *p = tree = new Node(0);
-            for (const auto& e : v) {
-                p->r = new Node(e);
+            for (auto it = s; it != e; it++) {
+                p->r = new Node(*it);
                 p->r->p = p;
                 p = p->r;
             }
@@ -166,6 +181,9 @@ namespace Tree
             }
         }
 
+        //
+        /* Key Based Methods */
+        // NOTE: No duplicates are allowed
         /**
          * Insert a new node with the given key
          * @param key the key value to insert
@@ -256,16 +274,21 @@ namespace Tree
             tree = nullptr;
         }
 
+        //
+        /* Index Based Methods */
+        // NOTE: 1-based indexing
         /**
          * Make the root node to be the k-th
          */
         void find_kth(int k) {
-            Node *x = tree;
+            Node *x = tree; push(x);
             while (true) {
-                while (x->l && x->l->cnt > k) x = x->l;
+                while (x->l && x->l->cnt > k) {
+                    x = x->l; push(x);
+                }
                 if (x->l) k -= x->l->cnt;
                 if (!k--) break;
-                x = x->r;
+                x = x->r; push(x);
             }
             splay(x);
         }
@@ -317,11 +340,36 @@ namespace Tree
             update(tree);
         }
 
+        /**
+         * Flip the interval[l, r]
+         */
+        void flip(int l, int r) {
+            interval(l, r);
+            tree->r->l->flip ^= 1;
+        }
+
+        /**
+         * Cyclic shift the range[l, r] k steps
+         * @param k positive to right, negative to left
+         */
+        void shift(int l, int r, int k) {
+            interval(l, r);
+            k %= r - l + 1;
+            if (k < 0) k += r - l + 1;
+            if (k) flip(l, r), flip(l, l + k - 1), flip(l + k, r);
+        }
+
+        T operator[](int idx) {
+            find_kth(idx);
+            return tree->key;
+        }
+
         T query(int l, int r, int k) {
             interval(l, r);
             // Do something within the interval
         }
     };
+
 
 } // namespace Tree
 } // namespace Utils
