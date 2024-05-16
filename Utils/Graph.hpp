@@ -25,8 +25,12 @@ namespace Graph {
     // Note: Assumes that graph is 1-indexed //
     //
 
+#ifndef graph
     template<typename T> using graph = vector<vector<pair<int, T>>>;
+#endif
+#ifndef matrix
     template<typename T> using matrix = vector<vector<T>>;
+#endif
     const size_t INF = LLONG_MAX;
 
     template<typename T>
