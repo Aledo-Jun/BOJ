@@ -2,6 +2,8 @@
 #define BOJ_MATH_HPP
 
 #include <vector>
+#include <random>
+#include <chrono>
 
 using namespace std;
 
@@ -42,14 +44,15 @@ namespace Utils::Math {
         return {s, m0};
     }
 
-    int pow_mod(int a, int pow, int MOD) {
-        int base = a;
-        int res = 1;
+    template<typename T>
+    T pow_mod(T a, __int128 pow, __int128 MOD) {
+        __int128 base = a;
+        __int128 res = 1;
         while (pow > 0) {
             if (pow & 1) {
-                res = (int) (1LL * res * base) % MOD;
+                res = (res * base) % MOD;
             }
-            base = (int) (1LL * base * base) % MOD;
+            base = (base * base) % MOD;
             pow >>= 1;
         }
         return res;
@@ -234,7 +237,7 @@ namespace Utils::Math {
     // Function to check if the given number is prime
     // It uses the fact that every prime number larger than 5 is
     // in the form of 6k - 1 or 6k + 1
-    bool isPrime(int n) {
+    bool is_prime_naive(int n) {
         if (n <= 1) return false;
         if (n <= 3) return true;
         if (n % 2 == 0 || n % 3 == 0) return false;
@@ -246,9 +249,54 @@ namespace Utils::Math {
         return true;
     }
 
+    using ull = unsigned long long;
+
+    bool miller_rabin(ull n, ull a) {
+        for (ull d = n - 1; ; d >>= 1) {
+            ull t = pow_mod(a, d, n);
+            if (t == n - 1) return true;
+            if (d & 1) return t == 1 || t == n - 1;
+        }
+        // cannot reach here
+    }
+
+    // Figure out the number's primality using Miller-Rabin algorithm
+    bool is_prime(ull n) {
+        if (n < 2) return false;
+        static ull a[12] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}; // works for n <= 2^64
+        for (ull p : a) {
+            if (n == p) return true;
+            if (n % p == 0) return false;
+        }
+        for (ull p : a) {
+            if (!miller_rabin(n, p)) return false;
+        }
+        return true;
+    }
+
+    // Pollard-rho algorithm to find the prime factor of the given number 'without' order
+    ull pollard_rho(__int128 n) {
+        if (~n & 1) return 2;
+        if (is_prime(n)) return n;
+
+        static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+        uniform_int_distribution<ull> rand(2, n - 1);
+        __int128 x = rand(rng), y = x, c = rand(rng) % 10 + 1;
+        __int128 d = 1;
+        auto f = [&](__int128 x) { return ((x * x) % n + c) % n; };
+        while (d == 1) {
+            x = f(x);
+            y = f(f(y));
+            d = gcd(abs(x - y), n);
+            if (d == n) return pollard_rho(d); // resolve possible infinite loop
+        }
+        if (is_prime(d)) return d;
+        return pollard_rho(d);
+    }
+
     // Count the number of positive integers less than or equal to n
     // that are coprime with n, using Euler's totient function.
-    int phi(int n) {
+    int phi_naive(int n) {
         int res = n;
 
         for (int p = 2; p * p <= n; p++) {
@@ -262,6 +310,19 @@ namespace Utils::Math {
 
         if (n > 1)
             res -= res / n;
+
+        return res;
+    }
+
+    ull phi(ull n) {
+        if (n == 1) return 1;
+        ull res = n;
+        while (n > 1 && !is_prime(n)) {
+            ull factor = pollard_rho(n);
+            while (n % factor == 0) n /= factor;
+            res -= res / factor;
+        }
+        if (n > 1) res -= res / n;
 
         return res;
     }
