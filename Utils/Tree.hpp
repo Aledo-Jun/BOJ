@@ -368,8 +368,28 @@ namespace Tree
             interval(l, r);
             // Do something within the interval
         }
-    };
+    }; // class SplayTree
 
+    pair<vector<int>,vector<int>> EulerTour(const graph<int>& g) {
+        int n = (int) g.size() - 1;
+        vector<int> S(n + 1), T(n + 1);
+
+        vector<bool> visited(n + 1, false);
+        function<void(int,int&)> dfs = [&](int u, int& d) -> void {
+            S[u] = d;
+            for (const auto& [v, _]: g[u]) {
+                if (visited[v]) continue;
+                visited[v] = true;
+                dfs(v, ++d);
+            }
+            T[u] = d;
+        };
+
+        int d = 1;
+        dfs(1, d);
+
+        return {S, T};
+    }
 
 } // namespace Tree
 } // namespace Utils
