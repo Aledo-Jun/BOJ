@@ -279,6 +279,137 @@ namespace SegTree
         }
     }; // class LazySegTree
 
+
+/**
+ * Lazy Segment Tree using iterative method
+ * @tparam T type of elements
+ * @tparam func function object to be called to perform the query
+ * @tparam updating_func function object to be called to update the containing element
+ */
+    template<typename T,
+            typename func = plus<T>,
+            typename updating_func = plus<T>>
+    class LazySegTree_iter {
+    private:
+        func f;
+        updating_func updating_f;
+        T default_query;
+        T default_lazy;
+
+        vector<T> tree, lazy, arr;
+        int size, height, n;
+
+        void init() {
+            for (int i = n - 1; i >= 1; i--) pull(i);
+        }
+
+        void apply(int node, T value) {
+            tree[node] = updating_f(tree[node], value);
+            if (node < n) lazy[node] = updating_f(lazy[node], value);
+        }
+
+        void pull(int node) {
+            tree[node] = f(tree[node << 1], tree[node << 1 | 1]);
+        }
+
+        void pull_all(int l, int r) {
+            for (int i = 1; i <= height; i++) {
+                if ((l >> i << i) != l) pull(l >> i);
+                if ((r >> i << i) != r) pull((r - 1) >> i);
+            }
+        }
+
+        void push(int node) {
+            if (lazy[node] == default_lazy) return;
+            apply(node << 1, lazy[node] >> 1);
+            apply(node << 1 | 1, lazy[node] >> 1);
+            lazy[node] = default_lazy;
+        }
+
+        void push_all(int l, int r) {
+            for (int i = height; i >= 1; i--) {
+                if ((l >> i << i) != l) push(l >> i);
+                if ((r >> i << i) != r) push((r - 1) >> i);
+            }
+        }
+
+        void _update(int i, T value) {
+            i += n;
+            for (int j = height; j >= 1; j--) push(i >> j);
+            tree[i] = updating_f(tree[i], value);
+            for (int j = 1; j <= height; j++) pull(i >> j);
+        }
+
+        void _update(int l, int r, T value) {
+            l += n, r += n;
+            push_all(l, r + 1);
+
+            int l0 = l, r0 = r;
+            for (int k = 1; l <= r; l >>= 1, r >>= 1, k <<= 1) {
+                // TODO: Add new function to replace value * k properly
+                if (l & 1) apply(l++, value * k);
+                if (~r & 1) apply(r--, value * k);
+            }
+
+            l = l0, r = r0;
+            pull_all(l, r + 1);
+        }
+
+        T _query(int i) {
+            i += n;
+            for (int j = height; j >= 1; j--) push(i >> j);
+            return tree[i];
+        }
+
+        T _query(int l, int r) {
+            l += n, r += n;
+            push_all(l, r + 1);
+
+            T res1 = default_query, res2 = default_query;
+            for (; l <= r; l >>= 1, r >>= 1) {
+                if (l & 1) res1 = f(res1, tree[l++]);
+                if (~r & 1) res2 = f(tree[r--], res2);
+                // NOTE: There exists cases that the operation's order must be considered
+            }
+            return f(res1, res2);
+        }
+
+    public:
+        /**
+         * Constructor for a segment tree
+         * @param v Array that the segment tree will be constructed from
+         * @param default_query The result of query that doesn't affect the other query result when performed <i>func</i> with
+         */
+        LazySegTree_iter(const vector<T> &v, T default_query = 0, T default_lazy = 0)
+                : default_query(std::move(default_query)), default_lazy(std::move(default_lazy))
+        {
+            arr = v;
+            height = (int) ceil(log2(v.size()));
+            size = (1 << (height + 1));
+            n = size >> 1;
+            tree.resize(size + 1, default_query);
+            lazy.resize(size + 1, default_lazy);
+            for (int i = 0; i < arr.size(); i++) tree[n + i] = arr[i];
+            init();
+        }
+
+        void update(int idx, T value) {
+            _update(idx, value);
+        }
+
+        void update(int l, int r, T value) {
+            _update(l, r, value);
+        }
+
+        T query(int idx) {
+            return _query(idx);
+        }
+
+        T query(int left, int right) {
+            return _query(left, right);
+        }
+    }; // class LazySegTree_iter
+
     template<typename T = int,
             typename Func = plus<T>,
             typename Inv_Func = minus<T>,
