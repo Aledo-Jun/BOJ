@@ -130,6 +130,12 @@ namespace SegTree
             for (i >>= 1; i > 0; i >>= 1) tree[i] = f(tree[i << 1], tree[i << 1 | 1]);
         }
 
+        T _query(int i) {
+            T res = default_query;
+            for (i += size / 2; i > 0; i >>= 1) res = f(res, tree[i]);
+            return res;
+        }
+
         T _query(int l, int r) {
             T res1 = default_query, res2 = default_query;
             for (l += size / 2, r += size / 2; l <= r; l >>= 1, r >>= 1) {
@@ -157,6 +163,10 @@ namespace SegTree
 
         void update(int idx, T value) {
             _update(idx, value);
+        }
+
+        T query(int idx) {
+            return _query(idx);
         }
 
         T query(int left, int right) {
