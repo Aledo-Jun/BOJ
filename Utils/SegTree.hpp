@@ -176,32 +176,46 @@ namespace SegTree
 
 /**
  * Lazy Segment Tree that can be used to efficiently handle the range queries
+ * @tparam T Value type
+ * @tparam func Functor to merge tree nodes
+ * @tparam updating_func Functor to update lazy value
+ * @tparam updating_func2 Functor to update tree node with lazy value
  */
+    template<typename T,
+            typename func = plus<T>,
+            typename updating_func = plus<T>,
+            typename updating_func2 = updating_func>
     class LazySegTree {
     private:
-        vector<int> tree, lazy;
-        vector<int> v;
-        int size, height;
+        func f;
+        updating_func updating_f;
+        updating_func2 lazy_to_tree;
 
-        int init(int node, int left, int right) {
+        vector<T> tree, lazy;
+        vector<T> v;
+        int size, height;
+        T default_lazy;
+        T default_query;
+
+        T init(int node, int left, int right) {
             if (left == right) return tree[node] = v[left];
 
             int mid = (left + right) >> 1;
             auto left_result = init(node << 1, left, mid);
             auto right_result = init(node << 1 | 1, mid + 1, right);
-            tree[node] = (left_result + right_result);
+            tree[node] = f(left_result, right_result);
 
             return tree[node];
         }
 
         void update_lazy(int node, int start, int end) {
-            if (lazy[node]) {
-                tree[node] += lazy[node] * (end - start + 1);
+            if (lazy[node] != default_lazy) {
+                tree[node] = lazy_to_tree(tree[node], lazy[node] * (end - start + 1));
                 if (start != end) {
-                    lazy[node << 1] += lazy[node];
-                    lazy[node << 1 | 1] += lazy[node];
+                    lazy[node << 1] = updating_f(lazy[node << 1], lazy[node]);
+                    lazy[node << 1 | 1] = updating_f(lazy[node << 1 | 1], lazy[node]);
                 }
-                lazy[node] = 0;
+                lazy[node] = default_lazy;
             }
         }
 
@@ -220,18 +234,15 @@ namespace SegTree
             if (e_idx < start || end < s_idx) return;
 
             if (s_idx <= start && end <= e_idx) {
-                tree[node] += value * (end - start + 1);
-                if (start != end) {
-                    lazy[node << 1] += value;
-                    lazy[node << 1 | 1] += value;
-                }
+                lazy[node] = updating_f(lazy[node], value);
+                update_lazy(node, start, end);
                 return;
             }
 
             int mid = (start + end) >> 1;
             _update(node << 1, start, mid, s_idx, e_idx, value);
             _update(node << 1 | 1, mid + 1, end, s_idx, e_idx, value);
-            tree[node] = (tree[node << 1] + tree[node << 1 | 1]);
+            tree[node] = f(tree[node << 1], tree[node << 1 | 1]);
         }
 
         /**
@@ -243,16 +254,16 @@ namespace SegTree
          * @param right ending index of summation
          * @return the sum of the array elements in range [left, right]
          */
-        int _query(int node, int start, int end, int left, int right) {
+        T _query(int node, int start, int end, int left, int right) {
             update_lazy(node, start, end);
 
-            if (left > end || right < start) return 0;
+            if (end < left || right < start) return default_query;
             if (left <= start && end <= right) return tree[node];
 
             int mid = (start + end) >> 1;
             auto left_result = _query(node << 1, start, mid, left, right);
             auto right_result = _query(node << 1 | 1, mid + 1, end, left, right);
-            return (left_result + right_result);
+            return f(left_result, right_result);
         }
 
     public:
@@ -261,24 +272,28 @@ namespace SegTree
          * Constructor for a lazy segment tree
          * @param arr  Build a segment tree from the given array
          */
-        LazySegTree(const vector<int> &arr) {
+        LazySegTree(const vector<int> &arr, T default_query, T default_lazy)
+                : default_query(std::move(default_query)),
+                  default_lazy(std::move(default_lazy))
+        {
             v = arr;
             height = (int) ceil(log2(v.size()));
             size = (1 << (height + 1));
             tree.resize(size + 1);
-            lazy.resize(size + 1);
+            lazy.resize(size + 1, default_lazy);
             init(1, 0, v.size() - 1);
         }
 
-        void update(int s_idx, int e_idx, int value) {
+        void update(int s_idx, int e_idx, T value) {
+            if (s_idx > e_idx) return;
             _update(1, 0, v.size() - 1, s_idx, e_idx, value);
         }
 
-        int query(int left, int right) {
+        T query(int left, int right) {
+            if (left > right) return 0;
             return _query(1, 0, v.size() - 1, left, right);
         }
     }; // class LazySegTree
-
 
 /**
  * Lazy Segment Tree using iterative method
