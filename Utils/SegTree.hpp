@@ -181,21 +181,23 @@ namespace SegTree
  * @tparam updating_func Functor to update lazy value
  * @tparam updating_func2 Functor to update tree node with lazy value
  */
-    template<typename T,
+    template<typename T, typename S,
             typename func = plus<T>,
-            typename updating_func = plus<T>,
-            typename updating_func2 = updating_func>
+            typename updating_func = plus<S>,
+            typename updating_func2 = T(T,S)>
     class LazySegTree {
     private:
         func f;
-        updating_func updating_f;
+        updating_func lazy_to_lazy;
         updating_func2 lazy_to_tree;
 
-        vector<T> tree, lazy;
         vector<T> v;
+        vector<T> tree;
+        vector<S> lazy;
+
         int size, height;
-        T default_lazy;
         T default_query;
+        S default_lazy;
 
         T init(int node, int left, int right) {
             if (left == right) return tree[node] = v[left];
@@ -212,8 +214,8 @@ namespace SegTree
             if (lazy[node] != default_lazy) {
                 tree[node] = lazy_to_tree(tree[node], lazy[node] * (end - start + 1));
                 if (start != end) {
-                    lazy[node << 1] = updating_f(lazy[node << 1], lazy[node]);
-                    lazy[node << 1 | 1] = updating_f(lazy[node << 1 | 1], lazy[node]);
+                    lazy[node << 1] = lazy_to_lazy(lazy[node << 1], lazy[node]);
+                    lazy[node << 1 | 1] = lazy_to_lazy(lazy[node << 1 | 1], lazy[node]);
                 }
                 lazy[node] = default_lazy;
             }
@@ -228,13 +230,13 @@ namespace SegTree
          * @param e_idx ending index that updating is required
          * @param value the value to be added to the array
          */
-        void _update(int node, int start, int end, int s_idx, int e_idx, int value) {
+        void _update(int node, int start, int end, int s_idx, int e_idx, S value) {
             update_lazy(node, start, end);
 
             if (e_idx < start || end < s_idx) return;
 
             if (s_idx <= start && end <= e_idx) {
-                lazy[node] = updating_f(lazy[node], value);
+                lazy[node] = lazy_to_lazy(lazy[node], value);
                 update_lazy(node, start, end);
                 return;
             }
@@ -272,7 +274,7 @@ namespace SegTree
          * Constructor for a lazy segment tree
          * @param arr  Build a segment tree from the given array
          */
-        LazySegTree(const vector<int> &arr, T default_query, T default_lazy)
+        LazySegTree(const vector<T> &arr, T default_query, S default_lazy)
                 : default_query(std::move(default_query)),
                   default_lazy(std::move(default_lazy))
         {
@@ -284,43 +286,48 @@ namespace SegTree
             init(1, 0, v.size() - 1);
         }
 
-        void update(int s_idx, int e_idx, T value) {
+        void update(int s_idx, int e_idx, S value) {
             if (s_idx > e_idx) return;
             _update(1, 0, v.size() - 1, s_idx, e_idx, value);
         }
 
         T query(int left, int right) {
-            if (left > right) return 0;
+            if (left > right) return default_query;
             return _query(1, 0, v.size() - 1, left, right);
         }
     }; // class LazySegTree
 
 /**
  * Lazy Segment Tree using iterative method
- * @tparam T type of elements
- * @tparam func function object to be called to perform the query
- * @tparam updating_func function object to be called to update the containing element
+ * @tparam T value type
+ * @tparam S lazy type
+ * @tparam func functor to merge tree nodes
+ * @tparam updating_func functor to update the lazy value
+ * @tparam updating_func2 functor to apply lazy update to tree node
  */
-    template<typename T,
+    template<typename T, typename S,
             typename func = plus<T>,
-            typename updating_func = plus<T>>
+            typename updating_func = plus<S>,
+            typename updating_func2 = T(T,S)>
     class LazySegTree_iter {
     private:
         func f;
-        updating_func updating_f;
+        updating_func lazy_to_lazy;
+        updating_func2 lazy_to_tree;
         T default_query;
-        T default_lazy;
+        S default_lazy;
 
-        vector<T> tree, lazy, arr;
+        vector<T> tree, arr;
+        vector<S> lazy;
         int size, height, n;
 
         void init() {
             for (int i = n - 1; i >= 1; i--) pull(i);
         }
 
-        void apply(int node, T value) {
-            tree[node] = updating_f(tree[node], value);
-            if (node < n) lazy[node] = updating_f(lazy[node], value);
+        void apply(int node, S value) {
+            tree[node] = lazy_to_tree(tree[node], value);
+            if (node < n) lazy[node] = lazy_to_lazy(lazy[node], value);
         }
 
         void pull(int node) {
@@ -348,20 +355,19 @@ namespace SegTree
             }
         }
 
-        void _update(int i, T value) {
+        void _update(int i, S value) {
             i += n;
             for (int j = height; j >= 1; j--) push(i >> j);
-            tree[i] = updating_f(tree[i], value);
+            tree[i] = lazy_to_tree(tree[i], value);
             for (int j = 1; j <= height; j++) pull(i >> j);
         }
 
-        void _update(int l, int r, T value) {
+        void _update(int l, int r, S value) {
             l += n, r += n;
             push_all(l, r + 1);
 
             int l0 = l, r0 = r;
             for (int k = 1; l <= r; l >>= 1, r >>= 1, k <<= 1) {
-                // TODO: Add new function to replace value * k properly
                 if (l & 1) apply(l++, value * k);
                 if (~r & 1) apply(r--, value * k);
             }
@@ -395,8 +401,8 @@ namespace SegTree
          * @param v Array that the segment tree will be constructed from
          * @param default_query The result of query that doesn't affect the other query result when performed <i>func</i> with
          */
-        LazySegTree_iter(const vector<T> &v, T default_query = 0, T default_lazy = 0)
-                : default_query(std::move(default_query)), default_lazy(std::move(default_lazy))
+        LazySegTree_iter(const vector<T> &v, T _default_query = 0, S _default_lazy = 0)
+                : default_query(std::move(_default_query)), default_lazy(std::move(_default_lazy))
         {
             arr = v;
             height = (int) ceil(log2(v.size()));
@@ -412,7 +418,7 @@ namespace SegTree
             _update(idx, value);
         }
 
-        void update(int l, int r, T value) {
+        void update(int l, int r, S value) {
             _update(l, r, value);
         }
 
@@ -424,6 +430,7 @@ namespace SegTree
             return _query(left, right);
         }
     }; // class LazySegTree_iter
+
 
     template<typename T = int,
             typename Func = plus<T>,
