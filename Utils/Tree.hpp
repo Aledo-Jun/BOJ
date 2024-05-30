@@ -54,7 +54,7 @@ namespace Tree
         graph<int> adj; // Adjacency list of the tree, Assume that nodes are 1-indexed
 
     public:
-        LCA(const graph<int>& adj) : adj(adj) {
+        LCA(const graph<int>& g) : adj(g) {
             int sz = (int) adj.size();
             MAX_BIT = std::ceil(std::log2(sz));
             depth.resize(sz);
@@ -65,7 +65,7 @@ namespace Tree
         void make_tree(int u, int p, int d) {
             depth[u] = d;
             parent[u][0] = p;
-            for (int i = 1; i < 20; i++) {
+            for (int i = 1; i < MAX_BIT; i++) {
                 parent[u][i] = parent[parent[u][i - 1]][i - 1];
             }
             for (const auto& [v, w]: adj[u]) {
@@ -77,13 +77,13 @@ namespace Tree
 
         int lca(int u, int v) {
             if (depth[u] < depth[v]) swap(u, v);
-            for (int i = 19; i >= 0; i--) {
+            for (int i = MAX_BIT - 1; i >= 0; i--) {
                 if (depth[u] - (1 << i) >= depth[v]) {
                     u = parent[u][i];
                 }
             }
             if (u == v) return u;
-            for (int i = 19; i >= 0; i--) {
+            for (int i = MAX_BIT - 1; i >= 0; i--) {
                 if (parent[u][i] != parent[v][i]) {
                     u = parent[u][i];
                     v = parent[v][i];
@@ -91,7 +91,7 @@ namespace Tree
             }
             return parent[u][0];
         }
-    };
+    }; // class LCA
 
 
 /**
