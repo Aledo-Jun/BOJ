@@ -157,7 +157,7 @@ namespace SegTree
             height = (int) ceil(log2(v.size()));
             size = (1 << (height + 1));
             tree.resize(size + 1, default_query);
-            for (int i = 0; i < arr.size(); i++) tree[size / 2 + i] = arr[i];
+            std::copy(arr.begin(), arr.end(), tree.begin() + size / 2);
             init();
         }
 
@@ -478,6 +478,10 @@ namespace SegTree
 
         void update(int x, T val) {
             _update(x, val);
+        }
+
+        T query(int idx) {
+            return _query(idx);
         }
 
         T query(int left, int right) {
