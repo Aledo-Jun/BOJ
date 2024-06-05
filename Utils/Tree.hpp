@@ -391,6 +391,85 @@ namespace Tree
         return {S, T};
     }
 
+    /**
+     * @brief Heavy Light Decomposition to perform a query on a path in a tree
+     */
+    class HLD {
+    private:
+        vector<int> sz,     // size of the subtree
+                    depth,  // depth of the node
+                    parent, // parent of the node
+                    top,    // top of the chain the node belongs to
+                    S, T;   // Euler Tour
+
+        int root;
+        graph<int> adj;     // adjacent list for original tree
+        vector<vector<int>> g;
+
+        vector<bool> visited;
+        void dfs(int u) { // construct g
+            visited[u] = true;
+            for (const auto& [v, _]: adj[u]) {
+                if (visited[v]) continue;
+                visited[v] = true;
+                g[u].emplace_back(v);
+                dfs(v);
+            }
+        }
+
+        // construct sz, depth, parent, and make the nodes adjacent if they belong to the same chain
+        void dfs1(int u) {
+            sz[u] = 1;
+            for (auto& v : g[u]) {
+                depth[v] = depth[u] + 1;
+                parent[v] = u;
+                dfs1(v);
+                sz[u] += sz[v];
+                if (sz[v] > sz[g[u][0]]) std::swap(v, g[u][0]);
+            }
+        }
+
+        int pv = 0;
+        // construct S, T, and top
+        void dfs2(int u) {
+            S[u] = ++pv;
+            for (const auto& v: g[u]) {
+                top[v] = v == g[u][0] ? top[u] : v;
+                dfs2(v);
+            }
+            T[u] = pv;
+        }
+
+        /* Add something to Utilize the HLD e.g. SegTree */
+
+    public:
+        explicit
+        HLD(const graph<int>& g, int root = 1) : adj(g), root(root) {
+            int n = (int) g.size();
+            sz.resize(n);
+            depth.resize(n);
+            parent.resize(n);
+            top.resize(n);
+            S.resize(n); T.resize(n);
+            this->g.resize(n);
+            visited.resize(n);
+            dfs(root), dfs1(root), dfs2(root);
+
+            // initialize additional variables
+        }
+
+        void path_query(int x, int y) {
+            while (top[x] ^ top[y]) {
+                if (depth[y] > depth[x]) swap(x, y);
+                int st = top[x];
+                // perform query from S[st] to S[x]
+                x = parent[st];
+            }
+            if (depth[x] > depth[y]) swap(x, y);
+            // perform query from S[x] to S[y]
+        }
+    }; // class HLD
+
 } // namespace Tree
 } // namespace Utils
 
