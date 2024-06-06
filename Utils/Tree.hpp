@@ -370,23 +370,24 @@ namespace Tree
         }
     }; // class SplayTree
 
-    pair<vector<int>,vector<int>> EulerTour(const graph<int>& g) {
+    array<vector<int>,2> EulerTour(const graph<int>& g) {
         int n = (int) g.size() - 1;
         vector<int> S(n + 1), T(n + 1);
 
+        int pv = 0;
         vector<bool> visited(n + 1, false);
-        function<void(int,int&)> dfs = [&](int u, int& d) -> void {
-            S[u] = d;
+        function<void(int)> dfs = [&](int u) -> void {
+            S[u] = ++pv;
+            visited[u] = true;
             for (const auto& [v, _]: g[u]) {
                 if (visited[v]) continue;
                 visited[v] = true;
-                dfs(v, ++d);
+                dfs(v);
             }
-            T[u] = d;
+            T[u] = pv;
         };
 
-        int d = 1;
-        dfs(1, d);
+        dfs(1);
 
         return {S, T};
     }
