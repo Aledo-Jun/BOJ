@@ -16,7 +16,7 @@ namespace MoTemplate {
 
         bool operator<(const query &other) const {
             if (l / sqrt_n == other.l / sqrt_n)
-                return ((l / sqrt_n) % 1) ? r < other.r : r > other.r;
+                return ((l / sqrt_n) & 1) ? r < other.r : r > other.r;
             return l < other.l;
         }
     };
