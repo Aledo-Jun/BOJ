@@ -269,9 +269,31 @@ namespace SegTree
             return f(left_result, right_result);
         }
 
+        int _get_kth(int node, int start, int end, T k) {
+            update_lazy(node, start, end);
+            if (start == end) return start;
+            int mid = (start + end) >> 1;
+            update_lazy(node << 1, start, mid);
+            update_lazy(node << 1 | 1, mid + 1, end);
+            if (k <= tree[node << 1]) return _get_kth(node << 1, start, mid, k);
+            return _get_kth(node << 1 | 1, mid + 1, end, k - tree[node << 1]);
+        }
+
     public:
         LazySegTree() = default;
-
+        /**
+         * Construct segTree with the size of @p sz filled with default values
+         * @param sz
+         */
+        LazySegTree(int sz, T default_query = {}, S default_lazy = {})
+                : default_query(std::move(default_query)), default_lazy(std::move(default_lazy))
+        {
+            v = vector<T>(sz, default_query);
+            height = (int) ceil(log2(v.size()));
+            size = (1 << (height + 1));
+            tree.resize(size + 1, default_query);
+            lazy.resize(size + 1, default_lazy);
+        }
         /**
          * Constructor for a lazy segment tree
          * @param arr  Build a segment tree from the given array
@@ -296,6 +318,10 @@ namespace SegTree
         T query(int left, int right) {
             if (left > right) return default_query;
             return _query(1, 0, v.size() - 1, left, right);
+        }
+
+        int get_kth(T k) {
+            return _get_kth(1, 0, v.size() - 1, k);
         }
     }; // class LazySegTree
 
@@ -397,8 +423,33 @@ namespace SegTree
             return f(res1, res2);
         }
 
+        int _get_kth(T k) {
+            for (int node = 1, offset = n; ; offset >>= 1) {
+                if (node >= n) return node - n;
+                push(node, offset);
+                if (k <= tree[node << 1]) node = node << 1;
+                else {
+                    k -= tree[node << 1];
+                    node = node << 1 | 1;
+                }
+            }
+        }
+
     public:
         LazySegTree_iter() = default;
+        /**
+         * Construct segTree with the size of @p sz filled with default values
+         * @param sz
+         */
+        LazySegTree_iter(int sz, T _default_query = {}, S _default_lazy = {})
+                : default_query(std::move(_default_query)), default_lazy(std::move(_default_lazy))
+        {
+            height = (int) ceil(log2(sz));
+            size = (1 << (height + 1));
+            n = size >> 1;
+            tree.resize(size + 1, default_query);
+            lazy.resize(size + 1, default_lazy);
+        }
         /**
          * Constructor for a segment tree
          * @param v Array that the segment tree will be constructed from
@@ -432,6 +483,10 @@ namespace SegTree
 
         T query(int left, int right) {
             return _query(left, right);
+        }
+
+        int get_kth(T k) {
+            return _get_kth(k);
         }
     }; // class LazySegTree_iter
 
