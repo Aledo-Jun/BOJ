@@ -461,7 +461,7 @@ namespace Tree
 
         void path_query(int x, int y) {
             while (top[x] ^ top[y]) {
-                if (depth[y] > depth[x]) swap(x, y);
+                if (depth[top[x]] < depth[top[y]]) swap(x, y);
                 int st = top[x];
                 // perform query from S[st] to S[x]
                 x = parent[st];
