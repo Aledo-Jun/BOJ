@@ -48,43 +48,37 @@ namespace LIS
     }
 }// End namespace LIS
 
-/*
- * Algorithm to find the Lowest Common Ancestor of two given nodes
+/**
+ * @brief Removable Priority Queue
  */
-namespace LCA {
-    const int MAX_N = 100001; // Adjust this based on your maximum number of nodes
+template<typename T, typename Container = vector<T>, typename Comp = less<T>>
+class PQ {
+    priority_queue<T, Container, Comp> pq, removed;
 
-    std::vector<int> depth; // Depth of each node
-    std::vector<std::vector<int>> parent; // Binary Lifting table
-    std::vector<std::map<int,int>> adj; // Adjacency map of the tree
+public:
+    void emplace(int x) { pq.emplace(x); }
 
-    void make_tree(int v, int p, int d) {
-        depth[v] = d;
-        parent[v][0] = p;
-        for (int i = 1; i < 20; i++) {
-            parent[v][i] = parent[parent[v][i - 1]][i - 1];
-        }
-        for (auto u : adj[v]) {
-            if (u.first != p) {
-                make_tree(u.first, v, d + 1);
-            }
+    void erase(int x) { removed.emplace(x); }
+
+    void refresh() {
+        while (!removed.empty() && pq.top() == removed.top()) {
+            pq.pop();
+            removed.pop();
         }
     }
 
-    int lca(int u, int v) {
-        if (depth[u] < depth[v]) swap(u, v);
-        for (int i = 19; i >= 0; i--) {
-            if (depth[u] - (1 << i) >= depth[v]) {
-                u = parent[u][i];
-            }
-        }
-        if (u == v) return u;
-        for (int i = 19; i >= 0; i--) {
-            if (parent[u][i] != parent[v][i]) {
-                u = parent[u][i];
-                v = parent[v][i];
-            }
-        }
-        return parent[u][0];
+    int top() {
+        refresh();
+        return pq.top();
     }
-}// End namespace LCA
+
+    int size() {
+        refresh();
+        return pq.size();
+    }
+
+    bool empty() {
+        refresh();
+        return pq.empty();
+    }
+};
