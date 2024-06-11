@@ -471,6 +471,123 @@ namespace Tree
         }
     }; // class HLD
 
+    /**
+     * @brief Centroid Tree implementation
+     */
+    class CentroidTree {
+        int n, root;
+        int MAX_BIT;
+        graph<int> g;
+        vector<int> sz,    // size of the subtree
+                    depth, // depth of the node
+                    dist,  // distance from the initial root
+                    tree,  // centroid tree(tree[i] = parent of i at the centroid tree)
+                    S, T, E;  // Euler Tour
+        vector<vector<int>> parent;
+
+        int pw = 0;
+        int dfs(int u, int p) {
+            sz[u] = 1;
+            E[++pw] = u;
+            S[u] = pw;
+            for (const auto& [v, w]: g[u]) {
+                if (v == p) continue;
+                depth[v] = depth[u] + 1;
+                dist[v] = dist[u] + w;
+                parent[v][0] = u;
+                for (int i = 1; i < MAX_BIT; i++) {
+                    parent[v][i] = parent[parent[v][i - 1]][i - 1];
+                }
+                sz[u] += dfs(v, u);
+                E[++pw] = u;
+            }
+            return sz[u];
+        }
+
+        vector<int> pw2, lg2;
+        vector<vector<pair<int,int>>> ST;
+        void lca_prepare(){
+            pw2.resize(MAX_BIT);
+            pw2[0] = 1;
+            for (int i = 1; i < MAX_BIT; i++) pw2[i] = pw2[i - 1] << 1;
+
+            lg2.resize(n * 2);
+            fill(all(lg2), -1);
+            for (int i = 0; i < MAX_BIT; i++) if (pw2[i] < n * 2) lg2[pw2[i]] = i;
+            for (int i = 1; i < n * 2; i++) if (lg2[i] == -1) lg2[i] = lg2[i - 1];
+
+            ST.resize(MAX_BIT, vector<pair<int,int>>(n * 2));
+            for (int i = 1; i < n * 2; i++) ST[0][i] = {depth[E[i]], E[i]};
+
+            for(int k = 1; k < MAX_BIT; k++) {
+                for (int i = 1; i < n * 2; i++) {
+                    if (i + pw2[k - 1] > n * 2) continue;
+                    ST[k][i] = min(ST[k - 1][i], ST[k - 1][i + pw2[k - 1]]);
+                }
+            }
+        }
+
+        int lca(int u, int v) {
+            int l = S[u], r = S[v];
+            if (l > r) swap(l, r);
+            int k = lg2[r - l + 1];
+            return min(ST[k][l], ST[k][r - pw2[k] + 1]).second;
+        }
+
+        int get_dist(int u, int v) {
+            return dist[u] + dist[v] - 2 * dist[lca(u, v)];
+        }
+
+        int get_centroid(int u) {
+            for (const auto& [v, w]: g[u]) {
+                if (sz[u] >> 1 < sz[v] && sz[v] < sz[u]) {
+                    sz[u] -= sz[v];
+                    sz[v] += sz[u];
+                    return get_centroid(v);
+                }
+            }
+            return u;
+        }
+
+        void build_centroid_tree(int u, int p = -1) {
+            u = get_centroid(u);
+
+            if (p == -1) tree[u] = u;
+            else tree[u] = p;
+
+            for (const auto& [v, _]: g[u])
+                if (sz[v] < sz[u])
+                    build_centroid_tree(v, u);
+        }
+
+    public:
+
+        explicit
+        CentroidTree(const graph<int>& g, int root = 1) : g(g), n((int)g.size()), root(root) {
+            sz.resize(n, 0);
+            depth.resize(n, 0);
+            dist.resize(n, 0);
+            S.resize(n), T.resize(n), E.resize(n * 2);
+            tree.resize(n);
+            MAX_BIT = std::ceil(std::log2(n));
+            parent.resize(n, vector<int>(MAX_BIT));
+
+
+            dfs(root, -1);
+            lca_prepare();
+            build_centroid_tree(root);
+
+        }
+
+        void query_template(int u) {
+            // climb up the centroid tree and update ancestor's set
+            for (int v = u, prev = u;; prev = v, v = tree[v]) {
+
+                if (tree[v] == v) break;
+            }
+        }
+    }; // class CentroidTree
+
 } // namespace Tree
 } // namespace Utils
 
