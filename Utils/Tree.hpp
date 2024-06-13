@@ -399,21 +399,23 @@ namespace Tree
     private:
         vector<int> sz,     // size of the subtree
                     depth,  // depth of the node
-                    parent, // parent of the node
+                    weight, // weight from the parent
                     top,    // top of the chain the node belongs to
-                    S, T;   // Euler Tour
+                    S, T, R;   // Euler Tour
+        vector<vector<int>> parent; // parent of the node (binary lifting table)
 
-        int root;
+        int root, n;
         graph<int> adj;     // adjacent list for original tree
         vector<vector<int>> g;
 
         vector<bool> visited;
         void dfs(int u) { // construct g
             visited[u] = true;
-            for (const auto& [v, _]: adj[u]) {
+            for (const auto& [v, w]: adj[u]) {
                 if (visited[v]) continue;
                 visited[v] = true;
                 g[u].emplace_back(v);
+                weight[v] = w;
                 dfs(v);
             }
         }
@@ -423,7 +425,10 @@ namespace Tree
             sz[u] = 1;
             for (auto& v : g[u]) {
                 depth[v] = depth[u] + 1;
-                parent[v] = u;
+                parent[v][0] = u;
+                for (int i = 1; i < 20; i++) {
+                    parent[v][i] = parent[parent[v][i - 1]][i - 1];
+                }
                 dfs1(v);
                 sz[u] += sz[v];
                 if (sz[v] > sz[g[u][0]]) std::swap(v, g[u][0]);
@@ -431,9 +436,10 @@ namespace Tree
         }
 
         int pv = 0;
-        // construct S, T, and top
+        // construct S, T, R, and top
         void dfs2(int u) {
             S[u] = ++pv;
+            R[S[u]] = u;
             for (const auto& v: g[u]) {
                 top[v] = v == g[u][0] ? top[u] : v;
                 dfs2(v);
@@ -441,34 +447,47 @@ namespace Tree
             T[u] = pv;
         }
 
+        int get_centroid(int u, int threshold) {
+            for (const auto& v: g[u]) {
+                if (sz[v] * 2 > threshold) return get_centroid(v, threshold);
+            }
+            return u;
+        }
+
         /* Add something to Utilize the HLD e.g. SegTree */
 
     public:
         explicit
-        HLD(const graph<int>& g, int root = 1) : adj(g), root(root) {
-            int n = (int) g.size();
+        HLD(graph<int>&& g, int root = 1) : adj(g), root(root), n((int)g.size()) {
             sz.resize(n);
             depth.resize(n);
-            parent.resize(n);
+            parent.resize(n, vector<int>(20));
             top.resize(n);
-            S.resize(n); T.resize(n);
+            weight.resize(n);
+            S.resize(n); T.resize(n); R.resize(n);
             this->g.resize(n);
             visited.resize(n);
+
             dfs(root), dfs1(root), dfs2(root);
 
             // initialize additional variables
+
         }
 
-        void path_query(int x, int y) {
+        int query(int x, int y) {
+            int res = 0;
             while (top[x] ^ top[y]) {
                 if (depth[top[x]] < depth[top[y]]) swap(x, y);
                 int st = top[x];
                 // perform query from S[st] to S[x]
-                x = parent[st];
+                x = parent[st][0];
             }
             if (depth[x] > depth[y]) swap(x, y);
             // perform query from S[x] to S[y]
+
+            return res;
         }
+
     }; // class HLD
 
     /**
@@ -512,7 +531,7 @@ namespace Tree
             for (int i = 1; i < MAX_BIT; i++) pw2[i] = pw2[i - 1] << 1;
 
             lg2.resize(n * 2);
-            fill(all(lg2), -1);
+            fill(lg2.begin(), lg2.end(), -1);
             for (int i = 0; i < MAX_BIT; i++) if (pw2[i] < n * 2) lg2[pw2[i]] = i;
             for (int i = 1; i < n * 2; i++) if (lg2[i] == -1) lg2[i] = lg2[i - 1];
 
