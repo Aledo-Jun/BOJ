@@ -59,7 +59,7 @@ namespace FFT {
     }
 
     template<typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+            std::enable_if_t<std::is_arithmetic_v<T>> * = nullptr>
     vector<base> fft(std::vector<T> &v) {
         std::vector<base> _v(v.begin(), v.end());
         _fft(_v, false);
@@ -71,7 +71,7 @@ namespace FFT {
     }
 
     template<typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+            std::enable_if_t<std::is_arithmetic_v<T>> * = nullptr>
     vector<base> inv_fft(std::vector<T> &v) {
         std::vector<base> _v(v.begin(), v.end());
         _fft(_v, true);
@@ -127,8 +127,8 @@ namespace FFT {
         return _fft_convolution(_a, _b);
     }
 
-    std::vector<base> _convolution(std::vector<base> &_a,
-                                   std::vector<base> &_b) {
+    std::vector<base> convolution(std::vector<base> &_a,
+                                  std::vector<base> &_b) {
         int n = (int) _a.size();
         int m = (int) _b.size();
         if (n == 0 || m == 0) return {};
@@ -137,7 +137,7 @@ namespace FFT {
     }
 
     template<typename T,
-            std::enable_if_t<std::is_integral_v<T>> * = nullptr>
+            std::enable_if_t<std::is_arithmetic_v<T>> * = nullptr>
     std::vector<T> convolution(const std::vector<T> &a,
                                const std::vector<T> &b) {
         int n = (int) a.size();
@@ -150,10 +150,10 @@ namespace FFT {
         std::vector<T> res(n + m - 1);
         if (is_floating_point_v<T>) {
             for (int i = 0; i < n + m - 1; i++)
-                res[i] = conv[i].real();
+                res[i] = (T)conv[i].real();
         } else {
             for (int i = 0; i < n + m - 1; i++)
-                res[i] = std::round(conv[i].real());
+                res[i] = (T)std::round(conv[i].real());
         }
 
         return res;
@@ -459,7 +459,7 @@ namespace NTT {
             return res;
         }
 
-        /**
+   /**
     * @brief Bostan-Mori Algorithm that finds n-th element of the sequence which is defined recursively as follow:
     * <p>
     *      {a_0, a_1, ..., a_k-1} = {a[0], a[1], ... , a[k-1]}, <br>
