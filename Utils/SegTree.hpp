@@ -469,7 +469,7 @@ namespace SegTree
             init();
         }
 
-        void update(int idx, T value) {
+        void update(int idx, S value) {
             _update(idx, value);
         }
 
