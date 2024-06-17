@@ -815,5 +815,35 @@ namespace SpecialSegTree
             return tree2[1];
         }
     }; // class MarsSegTree
+
+    class GoldMineSegTree {
+        template<typename T = long long>
+        struct GoldMineSeg {
+            /*
+             * Suppose a node is representing a range of [s,...m,...e]
+             * l := max_contiguous_sum[(s,...m,...),...e]
+             * r := max_contiguous_sum[s,...,(...m,...e)]
+             * mx := max_contiguous_sum[(s,...m,...e)] -> answer
+             * sum := total sum of the range
+             */
+            T l = 0, r = 0, mx = 0, sum = 0;
+
+            GoldMineSeg() = default;
+
+            GoldMineSeg(T l, T r, T mx, T sum) : l(l), r(r), mx(mx), sum(sum) {}
+
+            GoldMineSeg(T val) : l(max(val, 0LL)), r(max(val, 0LL)), mx(max(val, 0LL)), sum(val) {}
+        };
+
+        struct merge_goldmine {
+            GoldMineSeg<> operator()(const GoldMineSeg<> &l, const GoldMineSeg<> &r) {
+                return {max({l.l, l.sum + r.l, 0LL}),
+                        max({l.r + r.sum, r.r, 0LL}),
+                        max({l.mx, r.mx, l.r + r.l, 0LL}),
+                        l.sum + r.sum};
+            }
+        };
+    }; // class GoldMineSegTree
+
 } // namespace SpecialSegTree
 } // namespace Utils
