@@ -118,6 +118,27 @@ namespace FFT {
         return _a;
     }
 
+    // May NOT be useful
+    std::vector<base> _less_fft_convolution(std::vector<base> &_a,
+                                            std::vector<base> &_b) {
+        int n = (int) _a.size();
+        int m = (int) _b.size();
+        int l = 32 - __builtin_clz(n + m), len = 1 << l;
+
+        _a.resize(len); _b.resize(len);
+        for (int i = 0; i < m; i++) _a[i].imag(_b[i].real());
+        _fft(_a, false);
+
+        for (auto& x : _a) x *= x;
+
+        for (int i = 0; i < len; i++) _b[i] = _a[i] - std::conj(_a[-i & len - 1]);
+
+        _fft(_b, true);
+        for (int i = 0; i < len; i++) _a[i].real(_b[i].imag() / 4);
+
+        return _a;
+    }
+
     std::vector<base> _convolution(std::vector<base> &&_a,
                                    std::vector<base> &&_b) {
         int n = (int) _a.size();
