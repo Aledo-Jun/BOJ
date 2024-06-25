@@ -56,9 +56,9 @@ class ConvexHullTrick {
         return {l2.b - l1.b, l1.a - l2.a};
     }
 
-    [[nodiscard]] // return comp(cross_x(l1, l2), cross_x(l2, l3))
+    [[nodiscard]] // return cross_x(l1, l2) > cross_x(l2, l3)
     bool compare_cross(const Line& l1, const Line& l2, const Line& l3) const {
-        return comp(get_cross_x(l1, l2), get_cross_x(l2, l3));
+        return get_cross_x(l1, l2) > get_cross_x(l2, l3);
     }
 
     std::vector<Line> lines; // maintain the hull
