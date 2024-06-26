@@ -82,6 +82,8 @@ namespace Geometry
     // that forms the convex hull(clockwise from top to bottom of the stack).
     deque<int> convexHull(vector<Point> &v) {
         int n = v.size();
+        if (n == 0) return {};
+        if (n == 1) return {0};
 
         // Find the lowest point (leftmost, bottommost)
         int lowest = 0;
