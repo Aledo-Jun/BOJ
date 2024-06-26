@@ -117,7 +117,7 @@ namespace SegTree
         T default_query;
 
         vector<T> tree, arr;
-        int size, height;
+        int size, height, n;
 
         void init() {
             for (int i = size / 2 - 1; i > 0; i--)
@@ -147,17 +147,21 @@ namespace SegTree
         }
 
     public:
+        SegTree_iter() = default;
+        SegTree_iter(int sz, T default_query = 0) : default_query(std::move(default_query)) {
+            height = (int) ceil(log2(sz));
+            size = (1 << (height + 1));
+            n = size >> 1;
+            tree.resize(size + 1, default_query);
+        }
+
         /**
          * Constructor for a segment tree
          * @param v Array that the segment tree will be constructed from
          * @param default_query The result of query that doesn't affect the other query result when performed <i>func</i> with
          */
-        SegTree_iter(const vector<T> &v, T default_query = 0) : default_query(std::move(default_query)) {
-            arr = v;
-            height = (int) ceil(log2(v.size()));
-            size = (1 << (height + 1));
-            tree.resize(size + 1, default_query);
-            std::copy(arr.begin(), arr.end(), tree.begin() + size / 2);
+        SegTree_iter(const vector<T> &v, T default_query = 0) : SegTree_iter(v.size()), arr(v), default_query(std::move(default_query)) {
+            std::copy(arr.begin(), arr.end(), tree.begin() + n);
             init();
         }
 
