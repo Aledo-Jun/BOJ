@@ -7,7 +7,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
-#include <limits.h>
+#include <climits>
 #include "DisjointSet.hpp"
 
 using namespace std;
@@ -25,10 +25,12 @@ namespace Graph {
     // Note: Assumes that graph is 1-indexed //
     //
 
-#ifndef graph
+#ifndef GRAPH_TYPE_DEFINED
+#define GRAPH_TYPE_DEFINED
     template<typename T> using graph = vector<vector<pair<int, T>>>;
 #endif
-#ifndef matrix
+#ifndef MATRIX_TYPE_DEFINED
+#define MATRIX_TYPE_DEFINED
     template<typename T> using matrix = vector<vector<T>>;
 #endif
     const size_t INF = LLONG_MAX;
