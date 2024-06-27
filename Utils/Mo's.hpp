@@ -6,6 +6,7 @@
 #define BOJ_MO_S_HPP
 
 #include <vector>
+#include <algorithm>
 
 namespace MoTemplate {
     int n, sqrt_n, m;
@@ -22,6 +23,8 @@ namespace MoTemplate {
     };
 
     class Mo {
+    private:
+        std::vector<int> v;
         std::vector<query> q;
         std::vector<int> ans;
         int res; // if the res can be maintained, use this.
@@ -38,7 +41,11 @@ namespace MoTemplate {
             // Do something if needed
             return ret;
         }
-
+    public:
+        Mo(const std::vector<int>& v, const std::vector<query>& q) : v(v), q(q) {
+            std::sort(this->q.begin(), this->q.end());
+            ans.resize(q.size());
+        }
         void go() {
             res = 0;
             int s = q[0].l, e = s - 1;
