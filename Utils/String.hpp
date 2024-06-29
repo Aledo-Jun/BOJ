@@ -169,8 +169,9 @@ namespace String
      };
 
     // Find pattern's partial matches(failure table) for KMP algorithm
-    vector<int> getPartialMatch(const string &P) {
-        ull m = P.length();
+    template<typename StringType>
+    vector<int> getPartialMatch(const StringType &P) {
+        int m = (int) P.size();
         vector<int> pi(m, 0);
         int match = 0;
         for (int i = 1; i < m; i++) {
@@ -183,9 +184,10 @@ namespace String
     }
 
     // KMP algorithm to find the position of T's substring that matches P
-    vector<int> kmpSearch(const string &T, const string &P) {
-        ull n = T.length();
-        ull m = P.length();
+    template<typename StringType>
+    vector<int> kmpSearch(const StringType &T, const StringType &P) {
+        int n = (int) T.size();
+        int m = (int) P.size();
         vector<int> result;
         vector<int> pi = getPartialMatch(P);
         int match = 0;
