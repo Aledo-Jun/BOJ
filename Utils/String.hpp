@@ -538,9 +538,9 @@ namespace String
         String str;
         int sfx; // max suffix palindrome
         int total;
-        node tree[MAX_STRING_LENGTH];
+        node tree[MAX_STRING_LENGTH + 5];
 
-        int cnt[MAX_STRING_LENGTH];
+        int cnt[MAX_STRING_LENGTH + 5];
 
         void append(int pos) {
             int cur = sfx, cur_len;
@@ -591,7 +591,7 @@ namespace String
             /* modify required */
             for (int i = total; i >= 1; i--) {
                 ans = std::max(ans, 1LL * tree[i].len * cnt[i]);
-                cnt[tree[i].sfxlink] += cnt[i];
+                cnt[tree[i].sfxlink] += cnt[i]; // this is crucial to accumulate cnt
             }
         }
     }; // class PalindromeTree
