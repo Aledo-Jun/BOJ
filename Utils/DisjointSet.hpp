@@ -1,4 +1,5 @@
 #include <vector>
+#include <numeric>
 
 using namespace std;
 namespace Utils
@@ -25,15 +26,13 @@ namespace DisjointSet
         template<std::enable_if_t<Union_By_Rank>* = nullptr>
         DisjointSet(int sz) {
             parent.assign(sz, 0);
-            for (int i = 0; i < sz; i++)
-                parent[i] = i;
+            std::iota(parent.begin(), parent.end(), 1);
             rank.assign(sz, 0);
         }
 
         DisjointSet(int sz) {
             parent.assign(sz, 0);
-            for (int i = 0; i < sz; i++)
-                parent[i] = i;
+            std::iota(parent.begin(), parent.end(), 1);
         }
 
         // find the root of x
