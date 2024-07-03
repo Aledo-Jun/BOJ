@@ -178,12 +178,12 @@ namespace Graph {
     };
 
     template<typename T>
-    std::size_t minimumSpanningTree(const std::vector<Edge<T>> &g) {
+    int minimumSpanningTree(const std::vector<Edge<T>> &g, int sz) {
         std::priority_queue<Edge<T>, std::vector<Edge<T>>, std::greater<>> minHeap(g.begin(), g.end());
 
-        Utils::DisjointSet::DisjointSet ds(g.size() + 1);
+        Utils::DisjointSet::DisjointSet<> ds(sz + 1);
 
-        std::size_t res = 0;
+        int res = 0;
         while (!minHeap.empty()) {
             auto e = minHeap.top();
             minHeap.pop();
