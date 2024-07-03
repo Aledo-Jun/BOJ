@@ -5,52 +5,62 @@
 
 using namespace std;
 using ll = long long;
+using lld = long double;
 namespace Utils
 {
 namespace Geometry
 {
     // Structure representing the position of the point
-    struct Point {
-        int x{}, y{};
+    template<typename T = int>
+    struct Point_type {
+        T x{}, y{};
 
-        Point() = default;
+        Point_type() = default;
 
-        Point(int x, int y) : x(x), y(y) {}
+        Point_type(T x, T y) : x(x), y(y) {}
 
-        Point operator-(const Point &other) const {
-            Point res(x - other.x, y - other.y);
+        Point_type operator-(const Point_type &other) const {
+            Point_type res(x - other.x, y - other.y);
             return res;
         }
 
-        bool operator==(const Point &other) const {
+        bool operator==(const Point_type &other) const {
             return x == other.x && y == other.y;
         }
 
-        bool operator<(const Point &other) const {
+        bool operator<(const Point_type &other) const {
             return x < other.x || (x == other.x && y < other.y);
         }
 
-        bool operator<=(const Point &other) const {
+        bool operator<=(const Point_type &other) const {
             return *this < other || *this == other;
         }
 
-        bool operator>(const Point &other) const {
+        bool operator>(const Point_type &other) const {
             return !(*this < other) && !(*this == other);
         }
 
-        bool operator>=(const Point &other) const {
+        bool operator>=(const Point_type &other) const {
             return *this > other || *this == other;
         }
 
-        friend ostream &operator<<(ostream &out, const Point p) {
+        friend ostream &operator<<(ostream &out, const Point_type p) {
             out << p.x << ' ' << p.y << ' ';
             return out;
         }
     };
 
+    using Point = Point_type<>;
+
     ll dist(const Point &a, const Point &b) {
         return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
     }
+
+    lld area(const Point &a, const Point &b, const Point &c) {
+        lld s = (b.x - a.x) * (c.y - b.y) - (c.x - b.x) * (b.y - a.y);
+        return abs(s) / 2;
+    }
+
 
     // CounterClockWise algorithm that identifies the direction of the cross product of two vectors(p1->p2, p2->p3).
     // Returns +1 when it's counterclockwise, -1 when it's clockwise, 0 when aligned.
