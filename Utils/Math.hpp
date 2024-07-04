@@ -2,6 +2,8 @@
 #define BOJ_MATH_HPP
 
 #include <vector>
+#include <array>
+#include <cassert>
 #include <random>
 #include <chrono>
 
@@ -21,27 +23,32 @@ namespace Utils::Math {
         return gcd(b, a % b);
     }
 
-    constexpr std::pair<long long, long long> inv_gcd(long long a, long long b) {
-        a = safe_mod(a, b);
-        if (a == 0) return {b, 0};
-
-        long long s = b, t = a;
-        long long m0 = 0, m1 = 1;
-
-        while (t) {
-            long long u = s / t;
-            s -= t * u;
-            m0 -= m1 * u;
-
-            auto tmp = s;
-            s = t;
-            t = tmp;
-            tmp = m0;
-            m0 = m1;
-            m1 = tmp;
+    // returns {x,y,g} s.t. ax + by = g = gcd(a,b) >=0.
+    constexpr std::array<long long,3> ext_gcd(long long a, long long b) {
+        long long x = 1, y = 0;
+        long long z = 0, w = 1;
+        while (b) {
+            long long p = a / b, q = a % b;
+            x -= y * p, std::swap(x, y);
+            z -= w * p, std::swap(z, w);
+            a = b, b = q;
         }
-        if (m0 < 0) m0 += b / s;
-        return {s, m0};
+        if (a < 0) {
+            x = -x, z = -z, a = -a;
+        }
+        return {x, z, a};
+    }
+
+    // returns {x,g} s.t. a * x = g (mod m)
+    constexpr std::pair<long long, long long> inv_gcd(long long a, long long MOD) {
+        auto [x, y, g] = ext_gcd(a, MOD);
+        return {safe_mod(x, MOD), g};
+    }
+
+    long long mod_inv(int a, int MOD) {
+        auto [x, y, g] = ext_gcd(a, MOD);
+        assert(g == 1);
+        return safe_mod(x, MOD);
     }
 
     template<typename T>
@@ -58,6 +65,101 @@ namespace Utils::Math {
         return res;
     }
 
+    array<vector<int>,2> precompute_factorials(int MOD) {
+        vector<int> fact(MOD), inv_fact(MOD);
+        fact[0] = 1;
+        for (int i = 1; i < MOD; i++) fact[i] = fact[i - 1] * i % MOD;
+        inv_fact[MOD - 1] = mod_inv(fact[MOD - 1], MOD);
+        for (int i = MOD - 2; i >= 0; i--) inv_fact[i] = inv_fact[i + 1] * (i + 1) % MOD;
+
+        return {fact, inv_fact};
+    }
+
+    // fact[i] := product of integers i <= p^q && i % p != 0
+    array<vector<int>,2> precompute_factorials(int p, int q) {
+        int MOD = (int) pow(p, q);
+        vector<int> fact(MOD), inv_fact(MOD);
+        fact[0] = inv_fact[0] = 1;
+        for (int i = 1; i < MOD; i++) {
+            if (i % p) fact[i] = fact[i - 1] * i % MOD;
+            else fact[i] = fact[i - 1];
+
+            inv_fact[i] = mod_inv(fact[i], MOD);
+        }
+
+        return {fact, inv_fact};
+    }
+
+    int _binomial_coefficient(int n, int k, int MOD, const vector<int>& fact, const vector<int>& inv_fact) {
+        if (k > n) return 0;
+        return 1LL * fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD;
+    }
+
+    int Lucas(int n, int k, int MOD, const vector<int>& fact, const vector<int>& inv_fact) {
+        int res = 1;
+        while (n && k) {
+            int n_remain = n % MOD;
+            int k_remain = k % MOD;
+            if (k_remain > n_remain) return 0;
+            res = 1LL * res * _binomial_coefficient(n_remain, k_remain, MOD, fact, inv_fact) % MOD;
+            n /= MOD;
+            k /= MOD;
+        }
+        return res;
+    }
+
+    /**
+     * Generalization of Lucas' Theorem for modulo prime powers p^q
+     * (if q == 1, simply use Lucas instead)
+     * @return binomial_coefficient(n, k) mod p^q
+     * @see https://web.archive.org/web/20170202003812/http://www.dms.umontreal.ca/~andrew/PDF/BinCoeff.pdf Thm.1
+     */
+    int Lucas_pow_of_prime(int n, int k, int p, int q, const vector<int>& fact, const vector<int>& inv_fact) {
+        int MOD = (int) pow(p, q);
+        int A = n, B = k, C = n - k;
+        vector<int> ai, bi, ci;
+        vector<int> Ai, Bi, Ci;
+        while (A || B || C) {
+            ai.emplace_back(A % p);
+            bi.emplace_back(B % p);
+            ci.emplace_back(C % p);
+
+            Ai.emplace_back(A % MOD);
+            Bi.emplace_back(B % MOD);
+            Ci.emplace_back(C % MOD);
+
+            A /= p;
+            B /= p;
+            C /= p;
+        }
+
+        vector<int> e_prefix;
+        int carry = 0;
+        for (int i = 0; i < ai.size(); i++) {
+            int val = bi[i] + ci[i] + carry;
+            if (val >= p) {
+                carry = 1;
+                e_prefix.emplace_back(1);
+            } else {
+                carry = 0;
+                e_prefix.emplace_back(0);
+            }
+        }
+        for (int i = 1; i < e_prefix.size(); i++) e_prefix[i] += e_prefix[i - 1];
+
+        int e0 = e_prefix.back();
+        int eq_1 = e0 - e_prefix[q - 2]; // e_(q-1)
+        if (p == 2 && q >= 3) eq_1 = 0;
+
+        int res = (int) pow(p, e0) * (eq_1 & 1 ? -1 : 1) % MOD;
+        for (int i = 0; i < ai.size(); i++) {
+            res = res * fact[Ai[i]] % MOD;
+            res = res * inv_fact[Bi[i]] % MOD;
+            res = res * inv_fact[Ci[i]] % MOD;
+        }
+        return (res + MOD) % MOD;
+    }
+
     int factorial_mod(int n, int MOD) {
         int res = 1;
         for (int i = 1; i <= n; i++) {
@@ -66,7 +168,7 @@ namespace Utils::Math {
         return res;
     }
 
-    int _binomial_coefficient(int n, int k, int MOD) {
+    int binomial_coefficient_naive(int n, int k, int MOD) {
         // Calculate n! / (k! * (n-k)!)
         int numerator = factorial_mod(n, MOD);
         int denominator = (int) (1ULL * factorial_mod(k, MOD) * factorial_mod(n - k, MOD)) % MOD;
@@ -77,8 +179,8 @@ namespace Utils::Math {
         return result;
     }
 
-    // Calculate the binomial coefficient using Lucas' theorem
-    int binomial_coefficient(int n, int k, int MOD) {
+    // Lucas' theorem for prime MOD
+    int Lucas_prime(int n, int k, int MOD) {
         int result = 1;
         while (n > 0 && k > 0) {
             int n_remain = n % MOD;
@@ -89,9 +191,49 @@ namespace Utils::Math {
                 result = 0;
                 break;
             }
-            result = (result * binomial_coefficient(n_remain, k_remain, MOD)) % MOD;
+            result = (result * Lucas_prime(n_remain, k_remain, MOD)) % MOD;
         }
         return result;
+    }
+
+    /**
+     * Chinese Remainder Theorem(CRT) implementation
+     * @param remainders a_i := remainders[i]
+     * @param moduli     p_i := moduli[i]
+     * @return the solution of the system of linear congruence
+     *        { x = a_i mod p_i }
+     */
+    int Chinese_remainder_theorem(const std::vector<int>& remainders, const std::vector<int>& moduli) {
+        int N = 1;
+        for (int mod : moduli) N *= mod;
+
+        int res = 0;
+        for (int i = 0; i < moduli.size(); i++) {
+            int ai = remainders[i];
+            int Ni = N / moduli[i];
+            int Mi = mod_inv(Ni, moduli[i]);
+            res = (res + 1LL * ai * Mi % N * Ni % N) % N;
+        }
+
+        return res;
+    }
+
+    // use this for composite modulo
+    int binomial_coefficient(int n, int k) {
+        // this example is for MOD = 142857 = 27 * 11 * 13 * 37
+        vector<int> primes = {27, 11, 13, 37};
+        auto [fact27, inv_fact27] = precompute_factorials(3, 3);
+        auto [fact11, inv_fact11] = precompute_factorials(11);
+        auto [fact13, inv_fact13] = precompute_factorials(13);
+        auto [fact37, inv_fact37] = precompute_factorials(37);
+
+        vector<int> remainders(4);
+        remainders[0] = Lucas_pow_of_prime(n, k, 3, 3, fact27, inv_fact27);
+        remainders[1] = Lucas(n, k, 11, fact11, inv_fact11);
+        remainders[2] = Lucas(n, k, 13, fact13, inv_fact13);
+        remainders[3] = Lucas(n, k, 37, fact37, inv_fact37);
+
+        return Chinese_remainder_theorem(remainders, primes);
     }
 
     // Calculate the sum of the geometric series from r^0 to r^n recursively
@@ -101,114 +243,6 @@ namespace Utils::Math {
         if (n % 2 == 0)
             return (int) (1LL * geometric_sum(r, n / 2 - 1, MOD) * (1 + pow_mod(r, n / 2, MOD)) % MOD + pow_mod(r, n, MOD)) % MOD;
         return (int) (1LL * geometric_sum(r, n / 2, MOD) * (1 + pow_mod(r, n / 2 + 1, MOD))) % MOD;
-    }
-
-    /// TODO: Make own Matrix class
-    // Matrix size
-    const int SIZE = 2;
-    template<typename T> using matrix = vector<vector<T>>;
-
-    // Matrix multiplication operation
-    template<typename T,
-            typename std::enable_if_t<is_arithmetic_v<T>> * = nullptr>
-    void multiply(matrix<T> &A, matrix<T> &B, int MOD) {
-        matrix<T> temp(SIZE, vector<T>(SIZE));
-
-        for (int i = 0; i < SIZE; i++) {
-            for (int j = 0; j < SIZE; j++) {
-                for (int k = 0; k < SIZE; k++) {
-                    temp[i][j] = (temp[i][j] + (A[i][k] * B[k][j]) % MOD) % MOD;
-                }
-            }
-        }
-
-        for (int i = 0; i < SIZE; i++) {
-            for (int j = 0; j < SIZE; j++) {
-                A[i][j] = temp[i][j];
-            }
-        }
-    }
-
-    // Matrix exponentiation
-    template<typename T,
-            typename std::enable_if_t<is_arithmetic_v<T>> * = nullptr>
-    void matrixPow(matrix<T> &A, int n, int MOD) {
-        matrix<T> result(SIZE, vector<T>(SIZE, 0));
-        for (int i = 0; i < SIZE; i++)
-            result[i][i] = 1; // Identity matrix
-
-        while (n > 0) {
-            if (n & 1) {
-                multiply(result, A, MOD);
-            }
-
-            multiply(A, A, MOD);
-            n >>= 1;
-        }
-
-        for (int i = 0; i < SIZE; i++) {
-            for (int j = 0; j < SIZE; j++) {
-                A[i][j] = result[i][j];
-            }
-        }
-    }
-
-    int fib(int n, int MOD) {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-
-        matrix<int> A = {{1, 1},
-                         {1, 0}};
-        matrixPow(A, n - 1, MOD);
-
-        return A[0][0];
-    }
-
-    int subtract(int a, int b, int MOD) {
-        return (a - b + MOD) % MOD;
-    }
-
-    int multiply(int a, int b, int MOD) {
-        return (int) ((long long) a * b) % MOD;
-    }
-
-    int modularDeterminant(matrix<int> &mat, int MOD) {
-        int n = (int) mat.size();
-        int det = 1;
-
-        for (int i = 0; i < n; i++) {
-            // Find pivot element and swap rows if necessary
-            int pivot = -1;
-            for (int j = i; j < n; j++) {
-                if (mat[j][i] != 0) {
-                    pivot = j;
-                    break;
-                }
-            }
-            if (pivot == -1)
-                return 0;  // Matrix is singular
-
-            if (pivot != i) {
-                swap(mat[i], mat[pivot]);
-                det = multiply(det, -1, MOD);  // Swap rows, so negate the determinant
-            }
-
-            // Reduce to row echelon form
-            int pivotElement = mat[i][i];
-            int pivotInverse = pow_mod(pivotElement, MOD - 2, MOD);
-
-            for (int j = i + 1; j < n; j++) {
-                int factor = multiply(mat[j][i], pivotInverse, MOD);
-                for (int k = i; k < n; k++) {
-                    mat[j][k] = subtract(mat[j][k], multiply(mat[i][k], factor, MOD), MOD);
-                }
-            }
-
-            // Update determinant
-            det = multiply(det, pivotElement, MOD);
-        }
-
-        return det;
     }
 
     /**
