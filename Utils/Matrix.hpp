@@ -107,7 +107,7 @@ namespace Matrix
         ////////////////////////////////////////
 
         // Subscription operator
-        value_type*  operator[](int idx) {
+        value_type* operator[](int idx) {
             return Data[idx];
         }
 
@@ -125,7 +125,7 @@ namespace Matrix
             Matrix result;
             for (int i = 0; i < n_rows; i++) {
                 for (int j = 0; j < n_cols; j++) {
-                    result[i][j] = -this->Data[i][j];
+                    result[i][j] = -Data[i][j];
                 }
             }
             return result;
@@ -141,8 +141,8 @@ namespace Matrix
         friend MatrixType
         operator+(const MatrixType &a, const MatrixType2 &b) {
             MatrixType result;
-            int rows = MatrixType::get_n_rows();
-            int cols = MatrixType::get_n_cols();
+            constexpr int rows = MatrixType::get_n_rows();
+            constexpr int cols = MatrixType::get_n_cols();
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
                     result[i][j] = a[i][j] + b[i][j];
@@ -189,11 +189,11 @@ namespace Matrix
                 std::enable_if_t<MatrixType::get_n_cols() == MatrixType2::get_n_rows()> * = nullptr>
         friend auto
         operator*(const MatrixType &a, const MatrixType2 &b) {
+            constexpr int rows = MatrixType2::get_n_rows();
+            constexpr int cols = MatrixType::get_n_cols();
             Matrix<typename MatrixType::value_type,
-                    MatrixType2::get_n_rows(),
-                    MatrixType::get_n_cols()> result;
-            int rows = MatrixType2::get_n_rows();
-            int cols = MatrixType::get_n_cols();
+                   rows, cols> result;
+
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
                     result[i][j] = value_type(0);
@@ -299,7 +299,7 @@ namespace Matrix
 
         Matrix<value_type, n_cols, n_rows>
         transpose() {
-            Matrix < value_type, n_cols, n_rows > result;
+            Matrix <value_type, n_cols, n_rows> result;
             for (int i = 0; i < n_rows; i++) {
                 for (int j = 0; j < n_cols; j++) {
                     result[j][i] = this->Data[i][j];
@@ -316,11 +316,43 @@ namespace Matrix
         }
 
         template<std::enable_if_t<n_rows == n_cols> * = nullptr>
-        std::size_t determinant() {
-            throw std::runtime_error("Not implemented");
-            // TODO: move implementation from Math.hpp
-        }
+        double determinant() {
+            constexpr int n = n_rows;
+            double mat[n][n] = this->Data;
+            double det = 1;
 
+            for (int i = 0; i < n; i++) {
+                // Find pivot element and swap rows if necessary
+                int pivot = -1;
+                for (int j = i; j < n; j++) {
+                    if (mat[j][i] != 0) {
+                        pivot = j;
+                        break;
+                    }
+                }
+                if (pivot == -1)
+                    return 0;  // Matrix is singular
+
+                if (pivot != i) {
+                    swap(mat[i], mat[pivot]);
+                    det = -det;  // Swap rows, so negate the determinant
+                }
+
+                // Reduce to row echelon form
+                int pivotElement = mat[i][i];
+                int pivotInverse = 1 / mat[i][i];
+
+                for (int j = i + 1; j < n; j++) {
+                    int factor = mat[j][i] * pivotInverse;
+                    for (int k = i; k < n; k++) {
+                        mat[j][k] -= mat[i][k] * factor;
+                    }
+                }
+
+                // Update determinant
+                det *= pivotElement;
+            }
+        }
     }; // class Matrix
 
     // Some helper templates
@@ -345,6 +377,17 @@ namespace Matrix
             n >>= 1;
         }
         return result;
+    }
+
+    int fib(int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+
+        Matrix<int,2,2> A = {{1, 1},
+                             {1, 0}};
+        pow(A, n - 1);
+
+        return A[0][0];
     }
 
     // TODO: implement Dynamic Matrix using std::vector
