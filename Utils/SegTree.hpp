@@ -120,25 +120,25 @@ namespace SegTree
         int size, height, n;
 
         void init() {
-            for (int i = size / 2 - 1; i > 0; i--)
+            for (int i = n - 1; i > 0; i--)
                 tree[i] = f(tree[i << 1], tree[i << 1 | 1]);
         }
 
         void _update(int i, T value) {
-            i += size / 2;
+            i += n;
             tree[i] = updating_f(tree[i], value);
             for (i >>= 1; i > 0; i >>= 1) tree[i] = f(tree[i << 1], tree[i << 1 | 1]);
         }
 
         T _query(int i) {
             T res = default_query;
-            for (i += size / 2; i > 0; i >>= 1) res = f(res, tree[i]);
+            for (i += n; i > 0; i >>= 1) res = f(res, tree[i]);
             return res;
         }
 
         T _query(int l, int r) {
             T res1 = default_query, res2 = default_query;
-            for (l += size / 2, r += size / 2; l <= r; l >>= 1, r >>= 1) {
+            for (l += n, r += n; l <= r; l >>= 1, r >>= 1) {
                 if (l & 1) res1 = f(res1, tree[l++]);
                 if (~r & 1) res2 = f(tree[r--], res2);
                 // NOTE: There exists cases that the operation's order must be considered
