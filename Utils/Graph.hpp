@@ -42,7 +42,7 @@ namespace Graph {
         pq.emplace(0, start);
         dist[start] = 0;
         while (!pq.empty()) {
-            const auto& [distance, u] = pq.top();
+            const auto [distance, u] = pq.top();
             pq.pop();
 
             if (distance > dist[u]) continue;
