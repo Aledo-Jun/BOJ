@@ -7,12 +7,7 @@
 #ifndef BOJ_CONVEXHULLTRICK_HPP
 #define BOJ_CONVEXHULLTRICK_HPP
 
-#ifndef ll
-using ll = long long;
-#endif
-#ifndef lll
-using lll = __int128;
-#endif
+#include "using_templates.hpp"
 
 /**
  * Convex Hull Trick implementation
