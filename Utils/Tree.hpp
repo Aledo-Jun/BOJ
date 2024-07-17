@@ -474,6 +474,15 @@ namespace Tree
 
         }
 
+        int lca(int x, int y) {
+            while (top[x] ^ top[y]) {
+                if (depth[top[x]] < depth[top[y]]) swap(x, y);
+                x = parent[top[x]][0];
+            }
+            if (depth[x] > depth[y]) swap(x, y);
+            return x;
+        }
+
         int query(int x, int y) {
             int res = 0;
             while (top[x] ^ top[y]) {
