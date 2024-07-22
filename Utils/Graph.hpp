@@ -8,6 +8,7 @@
 #include <set>
 #include <algorithm>
 #include <climits>
+#include "using_templates.hpp"
 #include "DisjointSet.hpp"
 
 using namespace std;
@@ -25,14 +26,6 @@ namespace Graph {
     // Note: Assumes that graph is 1-indexed //
     //
 
-#ifndef GRAPH_TYPE_DEFINED
-#define GRAPH_TYPE_DEFINED
-    template<typename T> using graph = vector<vector<pair<int, T>>>;
-#endif
-#ifndef MATRIX_TYPE_DEFINED
-#define MATRIX_TYPE_DEFINED
-    template<typename T> using matrix = vector<vector<T>>;
-#endif
     const size_t INF = LLONG_MAX;
 
     template<typename T>
@@ -431,18 +424,12 @@ namespace Graph {
      * Dinic's algorithm to find the maximum flow of the given network graph.
      */
     class Dinic {
-    private:
-        struct Edge {
-            int u, v, cap, rev;
-            Edge(int u, int v, int cap, int rev) : u(u), v(v), cap(cap), rev(rev) {}
-        };
-
         int n;
-        vector<vector<Edge>> g;
+        vector<vector<int>> g, flow, cap;
         vector<int> level, ptr;
 
         bool bfs(int s, int t) {
-            level.assign(n, -1);
+            fill(all(level), -1);
             level[s] = 0;
             queue<int> q;
             q.push(s);
@@ -451,10 +438,10 @@ namespace Graph {
                 int u = q.front();
                 q.pop();
 
-                for (const Edge &e: g[u]) {
-                    if (e.cap > 0 && level[e.v] == -1) {
-                        level[e.v] = level[u] + 1;
-                        q.push(e.v);
+                for (const auto &v: g[u]) {
+                    if (level[v] == -1 && cap[u][v] - flow[u][v] > 0) {
+                        level[v] = level[u] + 1;
+                        q.emplace(v);
                     }
                 }
             }
@@ -462,19 +449,19 @@ namespace Graph {
             return level[t] != -1;
         }
 
-        int dfs(int u, int t, int flow) {
+        int dfs(int u, int t, int curr_flow) {
             if (u == t)
-                return flow;
+                return curr_flow;
 
             for (; ptr[u] < g[u].size(); ptr[u]++) {
-                Edge &e = g[u][ptr[u]];
+                auto &v = g[u][ptr[u]];
 
-                if (e.cap > 0 && level[e.v] == level[u] + 1) {
-                    int bottleneck = dfs(e.v, t, min(flow, e.cap));
+                if (cap[u][v] - flow[u][v] > 0 && level[v] == level[u] + 1) {
+                    int bottleneck = dfs(v, t, min(curr_flow, cap[u][v] - flow[u][v]));
 
                     if (bottleneck > 0) {
-                        e.cap -= bottleneck;
-                        g[e.v][e.rev].cap += bottleneck;
+                        flow[u][v] += bottleneck;
+                        flow[v][u] -= bottleneck;
                         return bottleneck;
                     }
                 }
@@ -483,22 +470,42 @@ namespace Graph {
         }
 
     public:
-        explicit Dinic(int n) : n(n), g(n), level(n), ptr(n) {}
+        Dinic(int sz) : n(sz), g(sz), level(sz), ptr(sz),
+                        flow(sz, vector<int>(sz, 0)), cap(sz, vector<int>(sz, 0)) {}
 
-        void addEdge(int u, int v, int cap) {
-            g[u].emplace_back(u, v, cap, g[v].size());
-            g[v].emplace_back(v, u, 0, g[u].size() - 1);
+        void add_edge(int u, int v, int c, bool is_directed = true) {
+            g[u].emplace_back(v);
+            g[v].emplace_back(u);
+            cap[u][v] += c;
+            if (!is_directed) cap[v][u] += c;
         }
 
-        int maxFlow(int s, int t) {
-            int flow = 0;
-
+        int max_flow(int s, int t) {
+            int res = 0;
             while (bfs(s, t)) {
-                ptr.assign(n, 0);
-                flow += dfs(s, t, INT_MAX);
+                fill(all(ptr), 0);
+                while(int f = dfs(s, t, INT_MAX)) res += f;
             }
+            return res;
+        }
 
-            return flow;
+        auto min_cut(int s) {
+            vector<bool> visited(n, false);
+            queue<int> q;
+            visited[s] = true;
+            q.emplace(s);
+
+            while (!q.empty()) {
+                int u = q.front();
+                q.pop();
+                for (const auto &v : g[u]) {
+                    if (!visited[v] && cap[u][v] - flow[u][v] > 0) {
+                        visited[v] = true;
+                        q.emplace(v);
+                    }
+                }
+            }
+            return visited;
         }
     };
 
