@@ -43,7 +43,6 @@ class ConvexHullTrick {
         Line(ll a, ll b) : Fraction(a, b) {}
     };
 
-
     [[nodiscard]] // return the value of f(x) = ax + b
     ll get_value(const Line& f, const ll x) const { return f.a * x + f.b; }
 
@@ -64,17 +63,18 @@ public:
     void insert(ll a, ll b) {
         Line newLine(a, b);
         for (int sz = (int)lines.size(); sz > 1; sz--) {
-            if (compare_cross(lines[sz - 2], lines[sz - 1], newLine)) lines.pop_back();
+            if ((a == lines.back().a && b >= lines.back().b)
+                || compare_cross(lines[sz - 2], lines[sz - 1], newLine)) lines.pop_back();
             else break;
         }
         lines.emplace_back(newLine);
     }
 
     ll query(ll x) {
-        int l = 0, r = lines.size();
-        while (l + 1 < r) {
-            int m = l + ((r - l) >> 1);
-            if (comp(Fraction(x), get_cross_x(lines[m - 1], lines[m]))) l = m;
+        int l = 0, r = lines.size() - 1;
+        while (l != r) {
+            int m = (l + r) >> 1;
+            if (comp(get_value(lines[m], x), get_value(lines[m+1], x))) l = m + 1;
             else r = m;
         }
         return get_value(lines[l], x);
