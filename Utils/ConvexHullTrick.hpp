@@ -20,7 +20,9 @@ class ConvexHullTrick {
     struct Fraction {
         // a / b
         ll a, b;
-        Fraction(ll a, ll b) : a(a), b(b) {}
+        Fraction(ll a, ll b) : a(a), b(b) {
+            if (b < 0) a = -a, b = -b; // keeps b to be positive
+        }
         Fraction(ll a) : a(a), b(1) {} // NOLINT(implicit conversion)
         bool operator< (const Fraction& other) const {
             return (lll) a * other.b < (lll) b * other.a;
