@@ -597,7 +597,7 @@ namespace Tree
             dist.resize(n, 0);
             S.resize(n), T.resize(n), E.resize(n * 2);
             tree.resize(n);
-            MAX_BIT = std::ceil(std::log2(n));
+            MAX_BIT = std::ceil(std::log2(n)) + 1;
             parent.resize(n, vector<int>(MAX_BIT));
 
 
