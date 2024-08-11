@@ -579,7 +579,7 @@ namespace Graph {
             }
             return {flow, cost};
         }
-    };
+    }; // class MCMF
 
 #pragma ide diagnostic pop
 } // namespace Graph
