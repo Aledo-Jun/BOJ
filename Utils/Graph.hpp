@@ -371,6 +371,60 @@ namespace Graph {
     }
 
     /**
+     * Biconnected Component
+     * each component contains nodes which has at least two distinct paths to other nodes in the same component
+     */
+    template<typename T>
+    class BCC {
+        int n;
+        graph<T> g, bcc;
+        vector<int> ord, low;
+        vector<pair<int, int>> bridges;
+        int time;
+
+        using DS = Utils::DisjointSet::DisjointSet<>;
+        DS ds;
+
+        void dfs(int u, int p = -1) {
+            ord[u] = low[u] = ++time;
+
+            for (const auto &[v, i]: g[u]) {
+                if (i == p) continue;
+                if (ord[v] == -1) {
+                    dfs(v, i);
+                    low[u] = min(low[u], low[v]);
+
+                    if (low[v] > ord[u]) { // u-v is a bridge
+                        bridges.emplace_back(u, v);
+                    } else {
+                        ds.uni(u, v);
+                    }
+                } else {
+                    low[u] = min(low[u], ord[v]);
+                }
+            }
+        }
+
+    public:
+        BCC() = default;
+
+        BCC(const graph<T> &g)
+                : g(g), n((int) g.size()),
+                  bcc(n), ord(n, -1), low(n, -1), time(0), ds(n) {
+            for (int i = 1; i < n; i++) if (ord[i] == -1) dfs(i);
+        }
+
+        pair<graph<T>, DS> get_BCC() {
+            for (const auto &[u, v]: bridges) {
+                int a = ds.find(u), b = ds.find(v);
+                bcc[a].emplace_back(b, 1);
+                bcc[b].emplace_back(a, 1);
+            }
+            return {bcc, ds};
+        }
+    };
+
+    /**
      * Bipartite Matching algorithm
      * @tparam T Value type
      * @var pairU
