@@ -422,7 +422,7 @@ namespace Graph {
             }
             return {bcc, ds};
         }
-    };
+    }; // class BCC
 
     /**
      * Bipartite Matching algorithm
@@ -472,7 +472,7 @@ namespace Graph {
 
             return result;
         }
-    };
+    }; // class Bipartite
 
     /**
      * Dinic's algorithm to find the maximum flow of the given network graph.
@@ -561,7 +561,7 @@ namespace Graph {
             }
             return visited;
         }
-    };
+    }; // class Dinic
 
     class MinCostMaxFlow {
         const int INF = 1e9;
