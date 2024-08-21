@@ -563,6 +563,92 @@ namespace Graph {
         }
     }; // class Dinic
 
+    /**
+     * Dinic's algorithm for a large graph that uses Edge structure instead of dense matrix.
+     */
+    template<typename flow_t, std::enable_if_t<std::is_arithmetic_v<flow_t>>* = nullptr>
+    class Dinic_Large {
+        private:
+            static constexpr flow_t INF = std::numeric_limits<flow_t>::max();
+
+            struct Edge {
+                int u, v;
+                int rev, idx;
+                flow_t cap;
+                bool is_back;
+                Edge(int u, int v, flow_t cap, int rev, int idx, bool back)
+                        : u(u), v(v), cap(cap), rev(rev), idx(idx), is_back(back) {}
+            };
+
+            int n;
+            vector<vector<Edge>> g;
+            vector<int> level, ptr;
+
+            bool bfs(int s, int t) {
+                level.assign(n, -1);
+                level[s] = 0;
+                queue<int> q;
+                q.push(s);
+
+                while (!q.empty()) {
+                    int u = q.front();
+                    q.pop();
+
+                    for (const Edge &e: g[u]) {
+                        if (e.cap > 0 && level[e.v] == -1) {
+                            level[e.v] = level[u] + 1;
+                            q.push(e.v);
+                        }
+                    }
+                }
+
+                return level[t] != -1;
+            }
+
+            flow_t dfs(int u, int t, flow_t flow) {
+                if (u == t)
+                    return flow;
+
+                for (; ptr[u] < g[u].size(); ptr[u]++) {
+                    Edge &e = g[u][ptr[u]];
+
+                    if (e.cap > 0 && level[e.v] == level[u] + 1) {
+                        flow_t bottleneck = dfs(e.v, t, min(flow, e.cap));
+
+                        if (bottleneck > 0) {
+                            e.cap -= bottleneck;
+                            g[e.v][e.rev].cap += bottleneck;
+                            return bottleneck;
+                        }
+                    }
+                }
+                return 0;
+            }
+
+        public:
+            explicit Dinic_Large(int n) : n(n), g(n), level(n), ptr(n) {}
+
+            void addEdge(int u, int v, int cap, int idx = -1) {
+                g[u].emplace_back(u, v, cap, g[v].size(), idx, false);
+                g[v].emplace_back(v, u, 0, g[u].size() - 1, idx, true);
+            }
+
+            flow_t maxFlow(int s, int t) {
+                flow_t flow = 0;
+
+                while (bfs(s, t)) {
+                    ptr.assign(n, 0);
+                    while (true) {
+                        flow_t f = dfs(s, t, INT_MAX);
+                        if (f == 0) break;
+                        flow += f;
+                    }
+                }
+
+                return flow;
+            }
+        };
+
     class MinCostMaxFlow {
         const int INF = 1e9;
 
