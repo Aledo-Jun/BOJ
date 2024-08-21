@@ -568,86 +568,169 @@ namespace Graph {
      */
     template<typename flow_t, std::enable_if_t<std::is_arithmetic_v<flow_t>>* = nullptr>
     class Dinic_Large {
-        private:
-            static constexpr flow_t INF = std::numeric_limits<flow_t>::max();
+        static constexpr flow_t INF = std::numeric_limits<flow_t>::max();
 
-            struct Edge {
-                int u, v;
-                int rev, idx;
-                flow_t cap;
-                bool is_back;
-                Edge(int u, int v, flow_t cap, int rev, int idx, bool back)
-                        : u(u), v(v), cap(cap), rev(rev), idx(idx), is_back(back) {}
-            };
+        struct Edge {
+            int u, v;
+            int rev, idx;
+            flow_t cap;
+            bool is_back;
 
-            int n;
-            vector<vector<Edge>> g;
-            vector<int> level, ptr;
-
-            bool bfs(int s, int t) {
-                level.assign(n, -1);
-                level[s] = 0;
-                queue<int> q;
-                q.push(s);
-
-                while (!q.empty()) {
-                    int u = q.front();
-                    q.pop();
-
-                    for (const Edge &e: g[u]) {
-                        if (e.cap > 0 && level[e.v] == -1) {
-                            level[e.v] = level[u] + 1;
-                            q.push(e.v);
-                        }
-                    }
-                }
-
-                return level[t] != -1;
-            }
-
-            flow_t dfs(int u, int t, flow_t flow) {
-                if (u == t)
-                    return flow;
-
-                for (; ptr[u] < g[u].size(); ptr[u]++) {
-                    Edge &e = g[u][ptr[u]];
-
-                    if (e.cap > 0 && level[e.v] == level[u] + 1) {
-                        flow_t bottleneck = dfs(e.v, t, min(flow, e.cap));
-
-                        if (bottleneck > 0) {
-                            e.cap -= bottleneck;
-                            g[e.v][e.rev].cap += bottleneck;
-                            return bottleneck;
-                        }
-                    }
-                }
-                return 0;
-            }
-
-        public:
-            explicit Dinic_Large(int n) : n(n), g(n), level(n), ptr(n) {}
-
-            void addEdge(int u, int v, int cap, int idx = -1) {
-                g[u].emplace_back(u, v, cap, g[v].size(), idx, false);
-                g[v].emplace_back(v, u, 0, g[u].size() - 1, idx, true);
-            }
-
-            flow_t maxFlow(int s, int t) {
-                flow_t flow = 0;
-
-                while (bfs(s, t)) {
-                    ptr.assign(n, 0);
-                    while (true) {
-                        flow_t f = dfs(s, t, INT_MAX);
-                        if (f == 0) break;
-                        flow += f;
-                    }
-                }
-
-                return flow;
-            }
+            Edge(int u, int v, flow_t cap, int rev, int idx, bool back)
+                    : u(u), v(v), cap(cap), rev(rev), idx(idx), is_back(back) {}
         };
+
+    private:
+        int n;
+        vector<vector<Edge>> g;
+        vector<int> level, ptr;
+
+        bool bfs(int s, int t) {
+            level.assign(n, -1);
+            level[s] = 0;
+            queue<int> q;
+            q.push(s);
+
+            while (!q.empty()) {
+                int u = q.front();
+                q.pop();
+
+                for (const Edge &e: g[u]) {
+                    if (e.cap > 0 && level[e.v] == -1) {
+                        level[e.v] = level[u] + 1;
+                        q.push(e.v);
+                    }
+                }
+            }
+
+            return level[t] != -1;
+        }
+
+        flow_t dfs(int u, int t, flow_t flow) {
+            if (u == t)
+                return flow;
+
+            for (; ptr[u] < g[u].size(); ptr[u]++) {
+                Edge &e = g[u][ptr[u]];
+
+                if (e.cap > 0 && level[e.v] == level[u] + 1) {
+                    flow_t bottleneck = dfs(e.v, t, min(flow, e.cap));
+
+                    if (bottleneck > 0) {
+                        e.cap -= bottleneck;
+                        g[e.v][e.rev].cap += bottleneck;
+                        return bottleneck;
+                    }
+                }
+            }
+            return 0;
+        }
+
+    public:
+        explicit Dinic_Large(int n) : n(n), g(n), level(n), ptr(n) {}
+
+        void addEdge(int u, int v, int cap, int idx = -1) {
+            g[u].emplace_back(u, v, cap, g[v].size(), idx, false);
+            g[v].emplace_back(v, u, 0, g[u].size() - 1, idx, true);
+        }
+
+        flow_t maxFlow(int s, int t) {
+            flow_t flow = 0;
+
+            while (bfs(s, t)) {
+                ptr.assign(n, 0);
+                while (true) {
+                    flow_t f = dfs(s, t, INT_MAX);
+                    if (f == 0) break;
+                    flow += f;
+                }
+            }
+
+            return flow;
+        }
+    }; // class Dinic_Large
+
+    /**
+     * A class to solve the circulation problem(network flow with lower bound).
+     * @tparam flow_t flow value type
+     * @tparam MaxFlow Max flow algorithm class
+     */
+    template <typename flow_t, template<typename> class MaxFlow = Dinic_Large>
+    class MaxFlowLowerBound {
+        MaxFlow<flow_t> maxFlow;
+        vector<flow_t> demand, low;
+        int n; // # of vertices - (src, sink)
+        flow_t pD = 0, mD = 0; // sum of demands(plus, minus)
+        int S, T; // src, sink
+
+    public:
+        explicit MaxFlowLowerBound(int sz) : maxFlow(sz + 2), demand(sz, 0), n(sz), S(sz), T(sz + 1) {}
+
+        MaxFlowLowerBound(const vector<flow_t> &init_demand) : MaxFlowLowerBound(init_demand.size()) {
+            demand = init_demand;
+        }
+
+        void addEdge(int u, int v, flow_t lb, flow_t ub) {
+            maxFlow.addEdge(u, v, ub - lb, low.size());
+            demand[u] += lb;
+            demand[v] -= lb;
+            low.emplace_back(lb);
+        }
+
+        void init() {
+            for (int i = 0; i < n; i++) {
+                if (demand[i] < 0) {
+                    maxFlow.addEdge(S, i, -demand[i]);
+                    mD -= demand[i];
+                } else if (demand[i] > 0) {
+                    maxFlow.addEdge(i, T, demand[i]);
+                    pD += demand[i];
+                }
+            }
+        }
+
+        bool is_there_circulation(int s, int t) {
+            maxFlow.addEdge(t, s, maxFlow.INF);
+            init();
+            auto flow = maxFlow.maxFlow(S, T);
+            return flow == pD && flow == mD;
+        }
+
+        bool is_there_circulation() {
+            init();
+            auto flow = maxFlow.maxFlow(S, T);
+            return flow == pD && flow == mD;
+        }
+
+        flow_t max_flow(int s, int t) {
+            if (is_there_circulation(s, t)) {
+                return maxFlow.maxFlow(s, t);
+            } else {
+                return -1;
+            }
+        }
+
+        flow_t max_flow() {
+            if (is_there_circulation()) {
+                return maxFlow.maxFlow(S, T);
+            } else {
+                return -1;
+            }
+        }
+
+        vector<flow_t> get_circulation() {
+            const auto &g = maxFlow.get_graph();
+            vector<flow_t> res(low.size());
+
+            for (int i = 1; i < n; i++) {
+                for (const auto &[u, v, rev, idx, cap, f, is_back]: g[i]) {
+                    if (is_back || idx == -1) continue;
+                    res[idx] = (low[idx] + f);
+                }
+            }
+            return res;
+        }
+    }; // class MaxFlowLowerBound
 
     class MinCostMaxFlow {
         const int INF = 1e9;
