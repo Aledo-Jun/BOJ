@@ -246,6 +246,33 @@ namespace Utils::Math {
     }
 
     /**
+     * Count the number of integer pairs (x,y) s.t. px + qy <= r
+     */
+    template<typename int_t>
+    int_t LatticePointCount(int_t p, int_t q, int_t r) {
+        if (p + q > r) return 0;
+        if (p < q) swap(p, q);
+        int_t Q = p / q, R = p % q;
+        int_t t = (Q * r + R) / p;
+        int_t t1 = (t - 1) / Q * (2 * t - Q * (1 + (t - 1) / Q)) / 2;
+        int_t t2 = LatticePointCount(q, R, r - q * t);
+        return t1 + t2;
+    }
+
+    /**
+     * Calculate sum_{i=1..n}((p * i) // q)
+     */
+    template<typename int_t>
+    int_t FloorSum(int_t p, int_t q, int_t n) {
+        int_t res = 0;
+        res += p / q * n * (n + 1) / 2;
+        p %= q;
+        res += LatticePointCount(p, q, p * (n + 1));
+        return res;
+    }
+
+
+    /**
      * Implementation of Eratosthenes' sieve
      * @param n
      * @return vector of primes that is less or equal than @p n
