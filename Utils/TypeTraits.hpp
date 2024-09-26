@@ -8,6 +8,37 @@
 #include <type_traits>
 namespace Utils::TypeTraits
 {
+    // Primary template: Not defined for unsupported types
+    template<typename T>
+    struct wider;
+
+    // Specialization for int
+    template<>
+    struct wider<int> {
+        using type = long long;
+    };
+
+    template<>
+    struct wider<long long> {
+        using type = __int128;
+    };
+
+// Specialization for double
+    template<>
+    struct wider<double> {
+        using type = long double;
+    };
+
+    template<>
+    struct wider<long double> {
+        using type = __float128;
+    };
+
+// Helper type alias for easier use
+    template<typename T>
+    using wider_t = typename wider<T>::type;
+
+
     template<typename T>
     using is_signed_int =
             typename std::conditional_t<std::is_integral_v<T> && std::is_signed_v<T>,
