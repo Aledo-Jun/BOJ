@@ -2,6 +2,7 @@
 #include <vector>
 #include <deque>
 #include <algorithm>
+#include <cmath>
 
 #include "TypeTraits.hpp"
 
@@ -182,6 +183,39 @@ namespace Geometry
             }
         }
         return res;
+    }
+
+    // Find the radius of the smallest circle that encloses all given points
+    // It uses a kind of gradient descent, so that the hyper-param adjustment might be needed
+    template<typename T = Point::value_type, typename V = wider<T>>
+    T enclosing_circle(const vector<Point> &v) {
+        int n = (int) v.size();
+        Point c{0, 0};
+        for (auto &[x, y]: v) {
+            c.x += x, c.y += y;
+        }
+        c.x /= n, c.y /= n;
+
+        double w = 0.1;
+        int epoch = 10'000;
+
+        V mx;
+        for (int i = 0; i < epoch; i++) {
+            mx = 0;
+            Point mxPoint;
+            for (const auto &e: v) {
+                auto d = dist_square(c, e);
+                if (mx < d) {
+                    mxPoint = e;
+                    mx = d;
+                }
+            }
+
+            c.x += (mxPoint.x - c.x) * w;
+            c.y += (mxPoint.y - c.y) * w;
+            w *= 0.995;
+        }
+        return sqrt(mx);
     }
 } // namespace Geometry
 } // namespace Utils
