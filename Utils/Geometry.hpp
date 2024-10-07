@@ -67,8 +67,8 @@ namespace Geometry
 // Returns +1 when it's counterclockwise, -1 when it's clockwise, 0 when aligned.
     template<typename T = Point::value_type, typename V = wider_t<T>>
     int CCW(const Point &p1, const Point &p2, const Point &p3) {
-        V tmp =  V(p1.x * p2.y) + V(p2.x * p3.y) + V(p3.x * p1.y)
-                 - V(p1.y * p2.x) - V(p2.y * p3.x) - V(p3.y * p1.x);
+        V tmp =  V(p1.x) * p2.y + V(p2.x) * p3.y + V(p3.x) * p1.y
+                 - V(p1.y) * p2.x - V(p2.y) * p3.x - V(p3.y) * p1.x;
         if (tmp == 0) return 0;
         else if (tmp > 0) return 1;
         else return -1;
