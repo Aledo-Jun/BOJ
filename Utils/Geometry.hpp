@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "TypeTraits.hpp"
+#include "using_templates.hpp"
 
 using namespace std;
 using ll = long long;
@@ -56,7 +57,7 @@ namespace Geometry
         }
     };
 
-    using Point = Point_type<lld>;
+    using Point = Point_type<double>;
 
     template<typename T = Point::value_type, typename V = wider_t<T>>
     V dist_square(const Point &a, const Point &b) {
@@ -74,115 +75,124 @@ namespace Geometry
         else return -1;
     }
 
-// Convex Hull algorithm that returns a stack of the indices of the points
-// that forms the convex hull(clockwise from top to bottom of the stack).
+// Convex Hull algorithm that returns a deque of the indices of the points
+// that forms the convex hull(clockwise from top to bottom of the deque).
     template<typename T = Point::value_type, typename V = wider_t<T>>
     deque<int> convexHull(vector<Point> &v) {
         int n = (int) v.size();
-        if (n == 0) return {};
-        if (n == 1) return {0};
+        if (n <= 1) return {};
 
-        // Find the lowest point (leftmost, bottommost)
-        int lowest = 0;
-        for (int i = 1; i < n; i++) {
-            if (v[i].y < v[lowest].y ||
-                (v[i].y == v[lowest].y && v[i].x < v[lowest].x)) {
-                lowest = i;
-            }
+        sort(all(v));
+        deque<int> hull;
+
+        // Lower hull
+        for (int i = 0; i < n; i++) {
+            while (hull.size() >= 2 && CCW(v[hull[hull.size() - 2]], v[hull.back()], v[i]) <= 0)
+                hull.pop_back();
+            hull.push_back(i);
         }
 
-        // Swap the lowest point to the first position
-        swap(v[0], v[lowest]);
-
-        // Sort the points by polar angle from the lowest point
-        auto cmp = [&](const Point &p1, const Point &p2) {
-            auto diff1 = p1 - v[0];
-            auto diff2 = p2 - v[0];
-            V cross = (V) diff1.x * diff2.y - (V) diff1.y * diff2.x;
-
-            if (cross == 0) {
-                // If two points have the same polar angle, choose the one closer to the origin
-                return dist_square(p1, v[0]) < dist_square(p2, v[0]);
-            }
-
-            return cross > 0;
-        };
-
-        sort(v.begin() + 1, v.end(), cmp);
-
-        deque<int> s;
-        s.emplace_back(0);
-        s.emplace_back(1);
-
-        int next = 2;
-
-        while (next < n) {
-            while (s.size() >= 2) {
-                int first, second;
-                second = s.back();
-                s.pop_back();
-                first = s.back();
-
-                if (CCW(v[first], v[second], v[next]) > 0) {
-                    s.emplace_back(second);
-                    break;
-                }
-            }
-            s.emplace_back(next++);
+        // Upper hull
+        int t = (int) hull.size() + 1;
+        for (int i = n - 2; i >= 0; i--) {
+            while (hull.size() >= t && CCW(v[hull[hull.size() - 2]], v[hull.back()], v[i]) <= 0)
+                hull.pop_back();
+            hull.push_back(i);
         }
-        return s;
+
+        hull.pop_back(); // Remove the duplicate point
+        return hull;
     }
-
-    struct PointPair {
-        Point p1, p2;
-    };
 
 // Find two points that represent the diameter of the convex hull of the given set of points.
 // (the distance between the two points is maximal of the distances between the points in the given set)
-    template<typename T = Point::value_type, typename V = wider_t<T>>
-    PointPair diameterOfConvexHull(vector<Point> v) {
+    template<typename T = Point::value_type, typename V = wider_t<T>,
+             typename Dist_func = function<V(Point,Point)>>
+    pair<Point,Point> diameterOfConvexHull(vector<Point> &v, Dist_func dist = dist_square) {
         // deque of indices of points that form the convex hull.
         auto convex = convexHull(v);
+        int m = (int) convex.size();
 
-        auto left = convex.begin(), right = convex.begin();
-        for (auto it = convex.begin(); it != convex.end(); it++) {
-            if (v[*it].y > v[*right].y ||
-                (v[*it].y == v[*right].y && v[*it].x > v[*right].x))
-                right = it;
-        }
-        // left : bottommost, leftmost
-        // right : topmost, rightmost
+        int k = 1;
+        pair<Point, Point> best_pair;
+        V max_dist = 0;
 
-        PointPair res;
-        V mx = -1;
-
-        // Rotating Calipers algorithm
-        while (true) {
-            auto l_diff = v[*left] - v[(left + 1 == convex.end()) ? (convex[0]) : *(left + 1)];
-            auto r_diff = v[*right] - v[(right + 1 == convex.end()) ? (convex[0]) : *(right + 1)];
-
-            V cross = (V) l_diff.x * r_diff.y - (V) l_diff.y * r_diff.x;
-            if (cross < 0) {
-                left++;
-                if (left == convex.end()) break;
-            } else if (cross > 0) {
-                right++;
-                if (right == convex.end()) right = convex.begin();
-            } else {
-                left++;
-                right++;
-                if (left == convex.end()) break;
-                if (right == convex.end()) right = convex.begin();
+        // Rotating calipers algorithm
+        for (int i = 0; i < m; i++) {
+            while (true) {
+                V curr_dist = dist(v[convex[i]], v[convex[k]]);
+                V next_dist = dist(v[convex[i]], v[convex[(k + 1) % m]]);
+                if (next_dist > curr_dist) k = (k + 1) % m;
+                else break;
             }
-
-            auto d = dist_square(v[*left], v[*right]);
-            if (d > mx) {
-                mx = d;
-                res.p1 = v[*left];
-                res.p2 = v[*right];
+            V d = dist(v[convex[i]], v[convex[k]]);
+            if (d > max_dist) {
+                max_dist = d;
+                best_pair = {v[convex[i]], v[convex[k]]};
             }
         }
-        return res;
+
+        return best_pair;
+    }
+
+// Find the closest pair of points among the given set of points
+    template<typename T = Point::value_type, typename V = wider_t<T>,
+             typename Dist_func = function<V(Point,Point)>>
+    pair<Point,Point> closestPointPair(vector<Point> &v, Dist_func dist = dist_square) {
+        sort(all(v));
+
+        auto dnc = [&](auto &&self, int l, int r) -> pair<Point,Point> {
+            if (r - l <= 3) {
+                pair<Point,Point> res;
+                V mx = numeric_limits<V>::max();
+                for (int i = l; i <= r; i++) {
+                    for (int j = i + 1; j <= r; j++) {
+                        V d = dist(v[i], v[j]);
+                        if (d < mx) {
+                            mx = d;
+                            res = {v[i], v[j]};
+                        }
+                    }
+                }
+                return res;
+            }
+
+            int m = (l + r) >> 1;
+            auto midPoint = v[m];
+
+            auto [l1, l2] = self(self, l, m);
+            V dl = dist(l1, l2);
+            auto [r1, r2] = self(self, m+1, r);
+            V dr = dist(r1, r2);
+
+            V d = min(dist(l1, l2), dist(r1, r2));
+            auto best = (dl < dr) ? make_pair(l1, l2) : make_pair(r1, r2);
+
+            // Create a strip of points near the dividing line within distance d
+            vector<Point> strip; strip.reserve(r-l+1);
+            for (int i = l; i <= r; i++) {
+                if (abs(dist(v[i], {midPoint.x, v[i].y})) < d) {
+                    strip.push_back(v[i]);
+                }
+            }
+            // Sort the strip by y-coordinate for better efficiency
+            sort(strip.begin(), strip.end(), [](const Point& a, const Point& b) { return a.y < b.y; });
+
+            // Check for the closest pair in the strip
+            V minStripDist = d;
+            for (int i = 0; i < (int)strip.size(); i++) {
+                for (int j = i + 1; j < (int)strip.size() && (strip[j].y - strip[i].y) < minStripDist; j++) {
+                    V dStrip = dist(strip[i], strip[j]);
+                    if (dStrip < minStripDist) {
+                        minStripDist = dStrip;
+                        best = {strip[i], strip[j]};
+                    }
+                }
+            }
+            return best;
+        };
+
+        return dnc(dnc, 0, v.size() - 1);
     }
 
     // Find the radius of the smallest circle that encloses all given points
