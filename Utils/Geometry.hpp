@@ -75,6 +75,16 @@ namespace Geometry
         else return -1;
     }
 
+// Returns distance between the point p and the line specified by two points l1, l2
+    template<typename T = Point::value_type, typename V = wider_t<T>>
+    V distance_line(const Point& l1, const Point& l2, const Point& p){
+        V a = (l2.y - l1.y);
+        V b = -(l2.x - l1.x);
+        V c = -(b * l1.y + a * l1.x);
+
+        return (a * p.x + b * p.y + c) * (a * p.x + b * p.y + c) / (a * a + b * b);
+    }
+
 // Convex Hull algorithm that returns a deque of the indices of the points
 // that forms the convex hull(clockwise from top to bottom of the deque).
     template<typename T = Point::value_type, typename V = wider_t<T>>
