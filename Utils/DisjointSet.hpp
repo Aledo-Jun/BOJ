@@ -13,26 +13,15 @@ namespace DisjointSet
         vector<int> parent;
         vector<int> rank;
     public:
-        template<std::enable_if_t<Union_By_Rank>* = nullptr>
         DisjointSet() {
             parent.assign(def_sz, 0);
-            rank.assign(def_sz, 0);
-        }
-
-        DisjointSet() {
-            parent.assign(def_sz, 0);
-        }
-
-        template<std::enable_if_t<Union_By_Rank>* = nullptr>
-        DisjointSet(int sz) {
-            parent.assign(sz, 0);
-            std::iota(parent.begin(), parent.end(), 1);
-            rank.assign(sz, 0);
+            if constexpr (Union_By_Rank) rank.assign(def_sz, 0);
         }
 
         DisjointSet(int sz) {
             parent.assign(sz, 0);
             std::iota(parent.begin(), parent.end(), 1);
+            if constexpr (Union_By_Rank) rank.assign(sz, 0);
         }
 
         // find the root of x
@@ -49,26 +38,21 @@ namespace DisjointSet
         void uni(int x, int y) {
             int rootx = find(x);
             int rooty = find(y);
-
-            if (rootx != rooty) {
-                if (rank[rootx] < rank[rooty])
-                    parent[rootx] = rooty;
-                else if (rank[rootx] > rank[rooty])
-                    parent[rooty] = rootx;
-                else {
-                    parent[rooty] = rootx;
-                    rank[rootx]++;
+            if constexpr (Union_By_Rank) {
+                if (rootx != rooty) {
+                    if (rank[rootx] < rank[rooty])
+                        parent[rootx] = rooty;
+                    else if (rank[rootx] > rank[rooty])
+                        parent[rooty] = rootx;
+                    else {
+                        parent[rooty] = rootx;
+                        rank[rootx]++;
+                    }
                 }
+            } else {
+                if (rootx != rooty)
+                    parent[rooty] = rootx;
             }
-        }
-
-        // Dangle y to the root of x
-        void uni(int x, int y) {
-            int rootx = find(x);
-            int rooty = find(y);
-
-            if (rootx != rooty)
-                parent[rooty] = rootx;
         }
     }; // class DisjointSet
 
