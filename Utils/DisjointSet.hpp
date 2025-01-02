@@ -15,12 +15,13 @@ namespace DisjointSet
     public:
         DisjointSet() {
             parent.assign(def_sz, 0);
+            std::iota(parent.begin(), parent.end(), 0);
             if constexpr (Union_By_Rank) rank.assign(def_sz, 0);
         }
 
         DisjointSet(int sz) {
             parent.assign(sz, 0);
-            std::iota(parent.begin(), parent.end(), 1);
+            std::iota(parent.begin(), parent.end(), 0);
             if constexpr (Union_By_Rank) rank.assign(sz, 0);
         }
 
