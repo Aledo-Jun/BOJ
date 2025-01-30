@@ -441,6 +441,13 @@ namespace SegTree
             }
         }
 
+        bool is_valid_range(int idx) {
+            return 0 <= idx && idx < n;
+        }
+        bool is_valid_range(int l, int r) {
+            return (l <= r) && is_valid_range(l) && is_valid_range(r);
+        }
+
     public:
         LazySegTree_iter() = default;
         /**
@@ -476,19 +483,23 @@ namespace SegTree
         }
 
         void update(int idx, S value) {
+            if (!is_valid_range(idx)) return;
             _update(idx, value);
         }
 
         void update(int l, int r, S value) {
+            if (!is_valid_range(l, r)) return;
             _update(l, r, value);
         }
 
         T query(int idx) {
+            if (!is_valid_range(idx)) return -1;
             return _query(idx);
         }
 
-        T query(int left, int right) {
-            return _query(left, right);
+        T query(int l, int r) {
+            if (is_valid_range(l, r)) return -1;
+            return _query(l, r);
         }
 
         int get_kth(T k) {
@@ -496,7 +507,7 @@ namespace SegTree
         }
     }; // class LazySegTree_iter
 
-
+    // [NOTE] 1-indexed
     template<typename T = int,
             typename Func = plus<T>,
             typename Inv_Func = minus<T>,
