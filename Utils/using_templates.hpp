@@ -16,11 +16,10 @@ using namespace std;
 using ll [[maybe_unused]] = long long;
 using ull [[maybe_unused]] = unsigned long long;
 using lll [[maybe_unused]] = __int128;
+using ld [[maybe_unused]] = double;
 using lld [[maybe_unused]] = long double;
 using llld [[maybe_unused]] = __float128;
-#define GRAPH_TYPE_DEFINED
 template<typename T> using graph [[maybe_unused]] = vector<vector<pair<int,T>>>;
-#define MATRIX_TYPE_DEFINED
 template<typename T> using matrix [[maybe_unused]] = vector<vector<T>>;
 
 
