@@ -55,7 +55,7 @@ namespace DataStructure {
                 }
             }
 
-            void push(int node, int offset = 2) {
+            void push(int node, int offset) {
                 if (lazy[node] == default_lazy) return;
                 apply(node << 1, lazy[node], offset >> 1);
                 apply(node << 1 | 1, lazy[node], offset >> 1);
@@ -71,7 +71,7 @@ namespace DataStructure {
 
             void _update(int i, S value) {
                 i += n;
-                for (int j = height; j >= 1; j--) push(i >> j);
+                for (int j = height, k = n >> 1; j >= 1; j--, k >>= 1) push(i >> j, k);
                 tree[i] = lazy_to_tree(tree[i], value, 1);
                 for (int j = 1; j <= height; j++) pull(i >> j);
             }
@@ -92,7 +92,7 @@ namespace DataStructure {
 
             T _query(int i) {
                 i += n;
-                for (int j = height; j >= 1; j--) push(i >> j);
+                for (int j = height, k = n >> 1; j >= 1; j--, k >>= 1) push(i >> j, k);
                 return tree[i];
             }
 
@@ -169,18 +169,16 @@ namespace DataStructure {
             }
 
             void update(int l, int r, S value) {
-                if (!is_valid_range(l, r)) return;
-                _update(l, r, value);
+                _update(max(0, l), min(r, n-1), value);
             }
 
             T query(int idx) {
-                if (!is_valid_range(idx)) return -1;
+                if (!is_valid_range(idx)) return 0;
                 return _query(idx);
             }
 
             T query(int l, int r) {
-                if (!is_valid_range(l, r)) return -1;
-                return _query(l, r);
+                return _query(max(0, l), min(r, n-1));
             }
 
             int get_kth(T k) {
