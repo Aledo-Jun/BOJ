@@ -126,7 +126,7 @@ namespace DataStructure {
             }
 
             bool is_valid_range(int l, int r) {
-                return (l <= r) && is_valid_range(l) && is_valid_range(r);
+                return ((l <= r) && is_valid_range(l) && is_valid_range(r));
             }
 
         public:
@@ -179,7 +179,7 @@ namespace DataStructure {
             }
 
             T query(int l, int r) {
-                if (is_valid_range(l, r)) return -1;
+                if (!is_valid_range(l, r)) return -1;
                 return _query(l, r);
             }
 
