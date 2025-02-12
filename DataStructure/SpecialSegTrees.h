@@ -81,6 +81,7 @@ namespace DataStructure {
         }; // class MarsSegTree
 
         class GoldMineSegTree {
+        public:
             template<typename T = long long>
             struct GoldMineSeg {
                 /*
@@ -96,14 +97,15 @@ namespace DataStructure {
 
                 GoldMineSeg(T l, T r, T mx, T sum) : l(l), r(r), mx(mx), sum(sum) {}
 
-                GoldMineSeg(T val) : l(max(val, 0LL)), r(max(val, 0LL)), mx(max(val, 0LL)), sum(val) {}
+                GoldMineSeg(T val) : l(max<T>(val, 0LL)), r(max<T>(val, 0LL)), mx(max<T>(val, 0LL)), sum(val) {}
             };
 
+            template<typename T>
             struct merge_goldmine {
-                GoldMineSeg<> operator()(const GoldMineSeg<> &l, const GoldMineSeg<> &r) {
-                    return {max({l.l, l.sum + r.l, 0LL}),
-                            max({l.r + r.sum, r.r, 0LL}),
-                            max({l.mx, r.mx, l.r + r.l, 0LL}),
+                GoldMineSeg<T> operator()(const GoldMineSeg<T> &l, const GoldMineSeg<T> &r) {
+                    return {max<T>({l.l, l.sum + r.l, 0LL}),
+                            max<T>({l.r + r.sum, r.r, 0LL}),
+                            max<T>({l.mx, r.mx, l.r + r.l, 0LL}),
                             l.sum + r.sum};
                 }
             };
