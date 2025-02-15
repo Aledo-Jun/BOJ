@@ -31,7 +31,7 @@ namespace DataStructure {
             T default_query;
             S default_lazy;
 
-            vector<T> tree, arr;
+            vector<T> tree;
             vector<S> lazy;
             int size{}, height{}, n{};
 
@@ -151,15 +151,14 @@ namespace DataStructure {
              * @param default_query The result of query that doesn't affect the other query result when performed <i>TT</i> with
              */
             explicit
-            LazySegTree_iter(const vector<T> &v, T _default_query = 0, S _default_lazy = 0)
+            LazySegTree_iter(const vector<T> &v, T _default_query = {}, S _default_lazy = {})
                     : default_query(std::move(_default_query)), default_lazy(std::move(_default_lazy)) {
-                arr = v;
                 height = (int) ceil(log2(v.size()));
                 size = (1 << (height + 1));
                 n = size >> 1;
                 tree.resize(size + 1, default_query);
                 lazy.resize(size + 1, default_lazy);
-                std::copy(arr.begin(), arr.end(), tree.begin() + n);
+                std::copy(v.begin(), v.end(), tree.begin() + n);
                 init();
             }
 
