@@ -8,11 +8,10 @@
 #include <type_traits>
 namespace Utils::TypeTraits
 {
-    // Primary template: Not defined for unsupported types
+    /// Wider type
     template<typename T>
     struct wider;
 
-    // Specialization for int
     template<>
     struct wider<int> {
         using type = long long;
@@ -23,7 +22,6 @@ namespace Utils::TypeTraits
         using type = __int128;
     };
 
-// Specialization for double
     template<>
     struct wider<double> {
         using type = long double;
@@ -34,11 +32,11 @@ namespace Utils::TypeTraits
         using type = __float128;
     };
 
-// Helper type alias for easier use
     template<typename T>
     using wider_t = typename wider<T>::type;
 
 
+    /// Signed or Unsigned test
     template<typename T>
     using is_signed_int =
             typename std::conditional_t<std::is_integral_v<T> && std::is_signed_v<T>,
@@ -57,6 +55,7 @@ namespace Utils::TypeTraits
     template<typename T>
     using is_unsigned_int_t = std::enable_if_t<is_unsigned_int<T>::value>;
 
+    /// Arithmetic test
     template<typename...> struct to_void { using type = void; };
     template<typename... Ts> using void_t = typename to_void<Ts...>::type;
 
@@ -73,5 +72,15 @@ namespace Utils::TypeTraits
 
     template<typename T>
     using supports_arithmetic_v = typename supports_arithmetic<T>::value;
+
+    /// ModInt
+    struct modint_base {};
+
+    template<typename T>
+    using is_modint = std::is_base_of<modint_base, T>;
+
+    template<typename T>
+    using is_modint_t = std::enable_if_t<is_modint<T>::value>;
+
 }
 #endif //BOJ_TYPETRAITS_HPP

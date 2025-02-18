@@ -87,16 +87,6 @@ namespace Math {
     template<unsigned m> constexpr unsigned primitive_root = primitive_root_constexpr(m);
 } // namespace Math
 
-namespace TypeTraits {
-    struct modint_base {};
-
-    template<typename T>
-    using is_modint = std::is_base_of<modint_base, T>;
-
-    template<typename T>
-    using is_modint_t = std::enable_if_t<is_modint<T>::value>;
-} // namespace TypeTraits
-
 namespace Modulo {
     using namespace TypeTraits;
     using namespace Math;
