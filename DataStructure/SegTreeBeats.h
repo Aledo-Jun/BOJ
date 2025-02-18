@@ -18,41 +18,42 @@ using namespace std;
  * two predicate functions (TAG and BREAK) that determine when an update can be applied directly
  * to a node and when further propagation (or “beating” the node) is required.
  *
- * For examples, @see https://github.com/Aledo-Jun/BOJ/blob/main/MyAnswers/17476.cpp
- *               @see https://github.com/Aledo-Jun/BOJ/blob/main/MyAnswers/17474.cpp
+ * For examples, @see <a href=https://github.com/Aledo-Jun/BOJ/blob/main/MyAnswers/17476.cpp>BOJ 17476</a>
+ *               @see <a href=https://github.com/Aledo-Jun/BOJ/blob/main/MyAnswers/17474.cpp>BOJ 17474</a>
+ *               @see <a href=https://github.com/Aledo-Jun/BOJ/blob/main/MyAnswers/17473.cpp>BOJ 17473</a>
  *
  * The behavior of the segment tree is fully determined by the following function objects:
- *
- * - **MergeNode**: Function used to merge two child nodes into a parent node.
- * - **MergeLazy**: Function used to merge a lazy value into an existing lazy value at a node,
+ * <ul>
+ *  <li> <b>MergeNode</b>: Function used to merge two child nodes into a parent node.
+ *  <li> <b>MergeLazy</b>: Function used to merge a lazy value into an existing lazy value at a node,
  *   using the node’s information as context.
- * - **UpdateLazy**: Function used to update (or combine) an existing lazy value with a new lazy
+ *  <li> <b>UpdateLazy</b>: Function used to update (or combine) an existing lazy value with a new lazy
  *   value, again given the node’s current information.
- * - **ApplyLazy**: Function that applies a lazy value to a node given the node’s current value,
+ *  <li> <b>ApplyLazy</b>: Function that applies a lazy value to a node given the node’s current value,
  *   the lazy value, and the length (number of elements) the node covers.
- * - **TAG (tag_condition)**: Predicate function that checks whether the current node meets a
+ *  <li> <b>TAG (tag_condition)</b>: Predicate function that checks whether the current node meets a
  *   condition such that the lazy update can be applied directly (i.e. “tagged”) without going
  *   deeper into its children.
- * - **BREAK (break_condition)**: Predicate function that checks whether the node meets a condition
+ *  <li> <b>BREAK (break_condition)</b>: Predicate function that checks whether the node meets a condition
  *   that should cause the update to be skipped (or “broken off”) because it is not applicable.
- *
+ * </ul>
  * @tparam NodeType   The type used for the data stored in the segment tree nodes.
  * @tparam LazyType   The type used for lazy update values.
  * @tparam MergeNode  Function type for merging two nodes.
- *                    Signature: NodeType(NodeType, NodeType)
+ *                    @code Signature: NodeType(NodeType, NodeType) @endcode
  * @tparam MergeLazy  Function type for merging two lazy values with node context.
- *                    Signature: LazyType(LazyType, LazyType, NodeType)
+ *                    @code Signature: LazyType(LazyType, LazyType, NodeType) @endcode
  * @tparam UpdateLazy Function type for updating a lazy value with a new lazy value given node context.
- *                    Signature: LazyType(LazyType, LazyType, NodeType)
+ *                    @code Signature: LazyType(LazyType, LazyType, NodeType) @endcode
  * @tparam ApplyLazy  Function type for applying a lazy update to a node.
- *                    Signature: NodeType(NodeType, LazyType, int)
+ *                    @code Signature: NodeType(NodeType, LazyType, int) @endcode
  *                    The int parameter represents the length (or size) of the segment the node covers.
  * @tparam TAG        Predicate function type used to determine if the node can be updated directly.
- *                    The narrower, the better performance
- *                    Signature: bool(NodeType, LazyType)
+ *                    The narrower, the better performance is.
+ *                    @code Signature: bool(NodeType, LazyType) @endcode
  * @tparam BREAK      Predicate function type used to decide if the update should be skipped for the node.
- *                    The broader, the better performance
- *                    Signature: bool(NodeType, LazyType)
+ *                    The broader, the better performance is.
+ *                    @code Signature: bool(NodeType, LazyType) @endcode
  */
 template<typename NodeType, typename LazyType,
         typename MergeNode = NodeType(NodeType,NodeType),
@@ -86,11 +87,12 @@ private:
     }
 
     void push(int node, int start, int end) {
+        if (start > end) return;
         if (lazy[node] != default_lazy) {
             tree[node] = applyLazy(tree[node], lazy[node], end - start + 1);
             if (start != end) {
-                lazy[node << 1] = mergeLazy(lazy[node << 1], lazy[node], tree[node]);
-                lazy[node << 1 | 1] = mergeLazy(lazy[node << 1 | 1], lazy[node], tree[node]);
+                lazy[node << 1] = mergeLazy(lazy[node << 1], lazy[node], tree[node << 1]);
+                lazy[node << 1 | 1] = mergeLazy(lazy[node << 1 | 1], lazy[node], tree[node << 1 | 1]);
             }
             lazy[node] = default_lazy;
         }
